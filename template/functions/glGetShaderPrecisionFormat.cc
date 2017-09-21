@@ -1,3 +1,4 @@
+// TODO: generate object-returning function
 napi_value napi_glGetShaderPrecisionFormat(napi_env env, napi_callback_info info){
     GET_NAPI_PARAMS_INFO(2, "glGetShaderPrecisionFormat(shadertype: number, precisiontype: number): GLShaderPrecisionFormat;");
     GET_NAPI_PARAM_GLENUM(shadertype, 0);

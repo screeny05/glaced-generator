@@ -87,7 +87,7 @@
 
 #define GET_NAPI_PARAM_TYPED_ARRAY(name, i, cType, napiType, readableType) \
     size_t byteLength_##name; \
-    void* name; \
+    void* void_##name; \
     bool isTypedArray_##name; \
     napi_typedarray_type arrayType_##name; \
     size_t length_##name; \
@@ -96,11 +96,12 @@
     napi_value bufferValue_##name; \
     NAPI_CALL(env, napi_get_typedarray_info(env, args[i], &arrayType_##name, &length_##name, NULL, &bufferValue_##name, NULL)); \
     NAPI_ASSERT(env, arrayType_##name == napiType, "Expected argument " #name "(" #i ") to be of type " #readableType); \
-    NAPI_CALL(env, napi_get_arraybuffer_info(env, bufferValue_##name, &name, &byteLength_##name));
+    NAPI_CALL(env, napi_get_arraybuffer_info(env, bufferValue_##name, &void_##name, &byteLength_##name)); \
+    cType name = (cType)void_##name;
 
-#define GET_NAPI_PARAM_TYPED_ARRAY_FLOAT32(name, i) GET_NAPI_PARAM_TYPED_ARRAY(name, i, float, napi_float32_array, "Float32Array");
-#define GET_NAPI_PARAM_TYPED_ARRAY_FLOAT64(name, i) GET_NAPI_PARAM_TYPED_ARRAY(name, i, double, napi_float64_array, "Float64Array");
-#define GET_NAPI_PARAM_TYPED_ARRAY_INT32(name, i) GET_NAPI_PARAM_TYPED_ARRAY(name, i, int32_t, napi_int32_array, "Int32Array");
+#define GET_NAPI_PARAM_TYPED_ARRAY_FLOAT32(name, i) GET_NAPI_PARAM_TYPED_ARRAY(name, i, float*, napi_float32_array, "Float32Array");
+#define GET_NAPI_PARAM_TYPED_ARRAY_FLOAT64(name, i) GET_NAPI_PARAM_TYPED_ARRAY(name, i, double*, napi_float64_array, "Float64Array");
+#define GET_NAPI_PARAM_TYPED_ARRAY_INT32(name, i) GET_NAPI_PARAM_TYPED_ARRAY(name, i, int32_t*, napi_int32_array, "Int32Array");
 
 
 #define GET_NAPI_PARAM_ARRAY_BASE(name, i, cType, orgType, napiGetCall, readableType) \
@@ -128,7 +129,6 @@
 #define GET_NAPI_PARAM_ARRAY_INT8(name, i) GET_NAPI_PARAM_ARRAY_BASE(name, i, int8_t, int32_t, napi_get_value_int32, "number");
 #define GET_NAPI_PARAM_ARRAY_UINT8(name, i) GET_NAPI_PARAM_ARRAY_BASE(name, i, uint8_t, uint32_t, napi_get_value_uint32, "number");
 #define GET_NAPI_PARAM_ARRAY_DOUBLE(name, i) GET_NAPI_PARAM_ARRAY_BASE(name, i, double, double, napi_get_value_double, "number");
-#define GET_NAPI_PARAM_ARRAY_FLOAT(name, i) GET_NAPI_PARAM_ARRAY_BASE(name, i, float, double, napi_get_value_double, "number");
 #define GET_NAPI_PARAM_ARRAY_BOOL(name, i) GET_NAPI_PARAM_ARRAY_BASE(name, i, bool, bool, napi_get_value_bool, "bool");
 
 #define GET_NAPI_PARAM_DOUBLE(name, i) GET_NAPI_PARAM_BASE(name, i, napi_number, double, napi_get_value_double, "number");

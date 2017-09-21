@@ -49,7 +49,7 @@ ${this.enums.map(enumValue => `
 ).join('')}
 
 ${this.commands.map(command => `
-${command.docs ? Utils.toBlockComment(command.docs, 4) : '    /* Docs: TODO */'}
+${command.docs ? Utils.toBlockComment(command.docs, 4) : '    /* Docs: NOTFOUND */'}
     ${command.getTypescriptSignature()};
 `
 ).join('')}
@@ -81,6 +81,11 @@ export default glContext;
 
 ${this.typeDefinitions.join('\n')}
 
+// prevent name wrangling
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <common.h>
 #include <scn_napi.h>
 #include "index.h"
@@ -96,7 +101,7 @@ ${Utils.getGlPfnName(command.name)} ${command.name};`
 ).join('')}
 
 // load gl functions
-void loadGlFunctions(GLACEloadproc load){
+void glaceLoadGl(GLACEloadproc load){
     ${this.commands.map(command => `
     ${command.name} = (${Utils.getGlPfnName(command.name)})load("${command.name}");`
     ).join('')}
@@ -116,7 +121,11 @@ void Init(napi_env env, napi_value exports, napi_value module, void* priv){
     NAPI_CALL_RETURN_VOID(env, napi_define_properties(env, exports, ${this.commands.length}, properties));
 }
 
-NAPI_MODULE(gles, Init);`
+NAPI_MODULE(gles, Init);
+
+#ifdef __cplusplus
+}
+#endif`
 
         // remove empty lines starting with spaces (e.g. lines starting a `.map`)
         cSource = cSource.replace(/\n +\n/g, '\n');

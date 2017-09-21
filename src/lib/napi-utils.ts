@@ -7,6 +7,30 @@ import * as wordwrap from 'wordwrap';
 
 import { GlCommandEntry, GlEnum, GlCommand } from './gl-xml';
 
+export function isOutParameter(type: string): boolean {
+    return [
+        'GLboolean *',
+        'GLfloat *',
+        'GLint *',
+        //'GLuint *',
+        //'GLsizei *',
+    ].indexOf(type) !== -1;
+}
+
+export function outParamTypeToDeclarationType(type: string): string {
+    // TODO: probably not sufficient
+    return type.replace(' *', '');
+}
+
+export function outParamTypeToPointerArgument(type: string): string {
+    // TODO: probably not sufficient
+    return '&' + outParamTypeToDeclarationType(type);
+}
+
+export function hasCommandOutParameters(command: GlCommand): boolean {
+    return !!command.params.find(param => isOutParameter(param.type));
+}
+
 export function parseCommandEntry(entry: any): GlCommandEntry {
     const name = entry.name[0]._.trim();
     const type = entry.$$
@@ -140,9 +164,11 @@ export function getTypescriptNameForCType(ctype: string): string {
             return 'string';
         case 'const void *':
             return 'ArrayBufferView | ArrayBuffer'
-        case 'const GLint *':
-        case 'const GLuint *':
         case 'const GLfloat *':
+            return 'Float32Array';
+        case 'const GLint *':
+            return 'Int32Array';
+        case 'const GLuint *':
         case 'const GLsizei *':
         case 'const GLintptr *':
         case 'const GLsizeiptr *':
@@ -161,7 +187,7 @@ export function getTypescriptNameForCType(ctype: string): string {
 }
 
 export function getGlCommandCall(command: GlCommand): string {
-    return command.name + '(' + command.params.map(param => param.name).join(', ') + ')';
+    return command.name + '(' + command.params.map(param => isOutParameter(param.type) ? outParamTypeToPointerArgument(param.name) : param.name).join(', ') + ')';
 }
 
 export function getCParamCall(paramType: string): string {
@@ -198,15 +224,12 @@ export function getCParamCall(paramType: string): string {
         case 'GLbitfield':
             return 'GET_NAPI_PARAM_UINT32';
         case 'const GLint *':
-        case 'const GLsizei *':
-        case 'const GLintptr *':
-        case 'const GLsizeiptr *':
-            return 'GET_NAPI_PARAM_ARRAY_INT32';
+            return 'GET_NAPI_PARAM_TYPED_ARRAY_INT32';
         case 'const GLuint *':
         case 'const GLenum *':
             return 'GET_NAPI_PARAM_ARRAY_UINT32';
         case 'const GLfloat *':
-            return 'GET_NAPI_PARAM_ARRAY_FLOAT';
+            return 'GET_NAPI_PARAM_TYPED_ARRAY_FLOAT32';
         case 'const GLdouble *':
             return 'GET_NAPI_PARAM_ARRAY_DOUBLE';
         case 'const GLubyte *':
@@ -220,6 +243,10 @@ export function getCParamCall(paramType: string): string {
         case 'const GLboolean *':
             return 'GET_NAPI_PARAM_ARRAY_BOOL';
 
+        case 'const GLsizei *':
+        case 'const GLintptr *':
+        case 'const GLsizeiptr *':
+            throw new TypeError(`Type ${paramType} should be checked before using 'GET_NAPI_PARAM_TYPED_ARRAY_INT32' (also update getTypescriptNameForCType)`);
         case 'const GLchar *const*':
         case 'const void *const*':
         case 'void *':
@@ -238,7 +265,7 @@ export function getCParamCall(paramType: string): string {
         case 'GLuint64 *':
         case 'GLsync':
         case 'GLDEBUGPROC':
-            return '// TODO - ' + paramType;
+            throw new TypeError(`Type ${paramType} is out-type - custom handling has to be implemented.`);
         default:
             throw new TypeError(`Type '${paramType}' unknown - no CParamCall found.`);
     }
