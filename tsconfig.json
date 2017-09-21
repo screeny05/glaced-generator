@@ -1,0 +1,24 @@
+{
+    "compilerOptions": {
+        "module": "commonjs",
+        "target": "ES2017",
+        "lib": ["DOM", "es7", "DOM.Iterable"],
+        "noImplicitAny": false,
+        "rootDirs": ["src", "node_modules"],
+        "typeRoots": ["node_modules/@types"],
+        "rootDir": "src",
+        "outDir": "dist",
+        "alwaysStrict": true,
+        "forceConsistentCasingInFileNames": true,
+        "noFallthroughCasesInSwitch": true,
+        "strictNullChecks": true,
+        "sourceMap": true,
+        "experimentalDecorators": true
+    },
+    "exclude": [
+        "node_modules",
+        "dist",
+        "target",
+        "template/functions"
+    ]
+}

@@ -5,6 +5,14 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
+# generation folders
+#ts->js
+dist
+#xml->c
+target
+#c->bin
+build
+
 # Runtime data
 pids
 *.pid
