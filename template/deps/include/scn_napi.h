@@ -3,11 +3,21 @@
     NAPI_CALL(env, getValueCall); \
     return returnValue;
 
+#define RETURN_NAPI_TYPED_ARRAY_BASE(length, data, type) \
+    napi_value bufferValue; \
+    napi_value returnValue; \
+    NAPI_CALL(env, napi_create_arraybuffer(env, length, (void**)data, &bufferValue)); \
+    NAPI_CALL(env, napi_create_typedarray(env, type, length, bufferValue, 0, &returnValue)); \
+    return returnValue;
+
 #define RETURN_NAPI_UNDEFINED() RETURN_NAPI_BASE(napi_get_undefined(env, &returnValue))
 #define RETURN_NAPI_NUMBER(val) RETURN_NAPI_BASE(napi_create_number(env, val, &returnValue))
 #define RETURN_NAPI_BOOL(val) RETURN_NAPI_BASE(napi_get_boolean(env, val, &returnValue))
 #define RETURN_NAPI_STRING(val) RETURN_NAPI_BASE(napi_create_string_utf8(env, (const char *)val, -1, &returnValue));
-#define RETURN_NAPI_ARRAY_BUFFER(length, data) RETURN_NAPI_BASE(napi_create_arraybuffer(env, length, data, data));
+#define RETURN_NAPI_ARRAY_BUFFER(length, data) RETURN_NAPI_BASE(napi_create_arraybuffer(env, length, (void**)data, &returnValue));
+#define RETURN_NAPI_TYPED_ARRAY_FLOAT(length, data) RETURN_NAPI_TYPED_ARRAY_BASE(length, data, napi_float32_array);
+#define RETURN_NAPI_TYPED_ARRAY_UINT32(length, data) RETURN_NAPI_TYPED_ARRAY_BASE(length, data, napi_uint32_array);
+#define RETURN_NAPI_TYPED_ARRAY_INT32(length, data) RETURN_NAPI_TYPED_ARRAY_BASE(length, data, napi_int32_array);
 
 #define RETURN_NAPI_GL_ACTIVE_INFO(name, size, type) \
     napi_value val; \
@@ -134,6 +144,7 @@
 #define GET_NAPI_PARAM_DOUBLE(name, i) GET_NAPI_PARAM_BASE(name, i, napi_number, double, napi_get_value_double, "number");
 #define GET_NAPI_PARAM_BOOL(name, i) GET_NAPI_PARAM_BASE(name, i, napi_boolean, bool, napi_get_value_bool, "bool");
 #define GET_NAPI_PARAM_INT64(name, i) GET_NAPI_PARAM_BASE(name, i, napi_number, int64_t, napi_get_value_int64, "number");
+#define GET_NAPI_PARAM_UINT64(name, i) GET_NAPI_PARAM_BASE(name, i, napi_number, uint64_t, napi_get_value_int64, "number");
 #define GET_NAPI_PARAM_INT32(name, i) GET_NAPI_PARAM_BASE(name, i, napi_number, int32_t, napi_get_value_int32, "number");
 #define GET_NAPI_PARAM_UINT32(name, i) GET_NAPI_PARAM_BASE(name, i, napi_number, uint32_t, napi_get_value_uint32, "number");
 #define GET_NAPI_PARAM_UINT16(name, i) \

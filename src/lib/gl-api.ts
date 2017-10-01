@@ -3,9 +3,12 @@ import { join as joinPath } from 'path';
 import { writeFile, mkdir } from 'fs';
 import * as copy from 'recursive-copy';
 import * as rimraf from 'rimraf';
+import { format as formatTs } from 'prettier';
 
 import * as Utils from './napi-utils';
 import { GlCommandEntry, GlEnum, GlCommand } from './gl-xml';
+import { formatCode as formatC } from './clang-format';
+import { mapToString } from './string-utils';
 
 export default class GlApi {
     api: string;
@@ -39,30 +42,29 @@ export default class GlApi {
         return this.requiredCommandsNames.filter(name => !this.commands.find(command => command.name === name));
     }
 
-    async generateFiles(folder){
-        const tsSource = `
+    async generateFiles(folder: string){
+        let tsSource = `
 import * as bindings from 'bindings';
 
 interface GLContext {
-${this.enums.map(enumValue => `
-    ${Utils.enumNameToExport(enumValue.name)}: number;`
-).join('')}
+    ${mapToString(this.enums, enumValue => `
+        ${Utils.enumNameToExport(enumValue.name)}: number;
+    `)}
 
-${this.commands.map(command => `
-${command.docs ? Utils.toBlockComment(command.docs, 4) : '    /* Docs: NOTFOUND */'}
-    ${command.getTypescriptSignature()};
-`
-).join('')}
+    ${mapToString(this.commands, command => `
+        ${command.docs ? Utils.toBlockComment(command.docs, 4) : '    /* Docs: NOTFOUND */'}
+        ${command.getTypescriptSignature()};
+    `, '\n\n')}
 }
 
 const glContext: GLContext = bindings('glace');
 
-${this.enums.map(enumValue => `
-glContext.${Utils.enumNameToExport(enumValue.name)} = ${enumValue.value};`
-).join('')}
+${mapToString(this.enums, enumValue => `
+    glContext.${Utils.enumNameToExport(enumValue.name)} = ${enumValue.value};
+`)}
 
 export default glContext;
-        `.trim();
+        `;
 
         // https://www.khronos.org/opengl/wiki/Load_OpenGL_Functions
         let cSource = `
@@ -88,34 +90,33 @@ extern "C" {
 
 #include <common.h>
 #include <scn_napi.h>
-#include "index.h"
+#include "glace.h"
+
 
 // define fn pointers
-${this.commands.map(command => `
-typedef ${command.type} (APIENTRYP ${Utils.getGlPfnName(command.name)})(${command.params.map(param => `${param.type} ${param.name}`).join(', ')});`
-).join('')}
+${mapToString(this.commands, (command: GlCommand) => command.getProcTypedef())}
 
 // create globals for functions
-${this.commands.map(command => `
-${Utils.getGlPfnName(command.name)} ${command.name};`
-).join('')}
+${mapToString(this.commands, (command: GlCommand) => `${command.getGlPfnName()} ${command.name};`)}
 
 // load gl functions
 void glaceLoadGl(GLACEloadproc load){
-    ${this.commands.map(command => `
-    ${command.name} = (${Utils.getGlPfnName(command.name)})load("${command.name}");`
-    ).join('')}
+    ${mapToString(this.commands, (command: GlCommand) => `
+        ${command.name} = (${command.getGlPfnName()})load("${command.name}");
+    `)}
 }
 
 ${/*this.enums.map(entry => `#define ${entry.name} ${entry.value}`).join('\n')*/''}
 
-${this.commands.map(command => command.getBody()).join('')}
+${mapToString(this.commands, command =>
+    command.getBody()
+)}
 
 void Init(napi_env env, napi_value exports, napi_value module, void* priv){
     napi_property_descriptor properties[] = {
-        ${this.commands.map(command => `
-        DECLARE_NAPI_PROPERTY("${Utils.commandNameToExport(command.name)}", napi_${command.name}),`
-        ).join('')}
+        ${mapToString(this.commands, (command: GlCommand) => `
+            DECLARE_NAPI_PROPERTY("${command.getExportName()}", napi_${command.name}),
+        `)}
     };
 
     NAPI_CALL_RETURN_VOID(env, napi_define_properties(env, exports, ${this.commands.length}, properties));
@@ -127,14 +128,22 @@ NAPI_MODULE(gles, Init);
 }
 #endif`
 
-        // remove empty lines starting with spaces (e.g. lines starting a `.map`)
-        cSource = cSource.replace(/\n +\n/g, '\n');
+        // format c source with clang
+        cSource = await formatC(cSource);
+
+        // format ts source with prettier
+        tsSource = formatTs(tsSource, {
+            printWidth: Infinity,
+            tabWidth: 4,
+            singleQuote: true,
+        });
+
 
         await promisify(rimraf)(folder);
         await promisify(mkdir)(folder);
-        await promisify(writeFile)(joinPath(folder, 'index.ts'), tsSource, 'utf8');
-        await promisify(writeFile)(joinPath(folder, 'index.cc'), cSource, 'utf8');
-        await copy('./template/index.h', joinPath(folder, 'index.h'));
+        await promisify(writeFile)(joinPath(folder, 'glace.ts'), tsSource, 'utf8');
+        await promisify(writeFile)(joinPath(folder, 'glace.cc'), cSource, 'utf8');
+        await copy('./template/glace.h', joinPath(folder, 'glace.h'));
         await copy('./template/deps/', joinPath(folder, 'deps'));
     }
 }

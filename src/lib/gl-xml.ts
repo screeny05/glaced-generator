@@ -1,31 +1,73 @@
 import * as Utils from './napi-utils';
+import { nativeTypeCollection, NativeType } from './type-matcher';
+import { NativeHintsCommand, nativeHintsCommands } from './native-hints';
 
 export interface GlEnum {
-    docs?: string,
-    name: string,
-    value: number
-};
-
-export interface GlCommandEntry {
-    type: string,
-    name: string
-};
-
-export class GlCommand implements GlCommandEntry {
-    type: string;
+    docs?: string;
     name: string;
+    value: number;
+}
+
+export class GlCommandEntry {
+    type: NativeType;
+    name: string;
+    length?: number | string;
+    isSynthetic?: boolean = false;
+    forceOutparam?: boolean;
+
+    constructor(name: string, type: NativeType | string, data?: Partial<GlCommandEntry>){
+        this.name = name;
+        Object.assign(this, data);
+        if(typeof type === 'string'){
+            this.type = nativeTypeCollection.get(type, this.forceOutparam);
+        } else {
+            this.type = type;
+        }
+    }
+
+    getReturnMacro(val?: string): string {
+        return this.type.returnMacro(val ? val : this.name, this.length);
+    }
+
+    getGetParamMacro(i: number): string {
+        return this.type.getParamMacro(this, i);
+    }
+
+    getPointerName(){
+        // TODO: i don't know _anything_ about c.
+        return '&' + this.name;
+    }
+
+    getExportName(){
+        return this.name.replace(/^gl(\w)/, (match, group0) => group0.toLowerCase());
+    }
+
+    getGlPfnName(): string {
+        return 'PFN' + this.name.replace('_', '').toUpperCase() + 'PROC';
+    }
+}
+
+export class GlCommand extends GlCommandEntry {
     body?: string;
     docs?: string;
     params: GlCommandEntry[];
-    inParams: GlCommandEntry[];
+    getParams: GlCommandEntry[];
+    glParams: GlCommandEntry[];
     outParams: GlCommandEntry[];
+    hints?: NativeHintsCommand;
 
-    constructor(type: string, name: string, params: GlCommandEntry[] = []){
-        this.type = type;
-        this.name = name;
+    constructor(name: string, type: NativeType, params: GlCommandEntry[] = []){
+        super(name, type);
+        this.hints = nativeHintsCommands[name];
+        this.setParameters(params);
+    }
+
+    setParameters(params: GlCommandEntry[]){
         this.params = params;
-        this.inParams = this.params.filter(param => !Utils.isOutParameter(param.type));
-        this.outParams = this.params.filter(param => Utils.isOutParameter(param.type));
+        this.hints && this.hints.syntheticParams && this.hints.syntheticParams.forEach(param => this.params.push(new GlCommandEntry(param.name, param.type, { isSynthetic: true })));
+        this.getParams = this.params.filter(param => !param.type.isOutType);
+        this.glParams = this.params.filter(param => !param.isSynthetic);
+        this.outParams = this.params.filter(param => param.type.isOutType && !param.isSynthetic);
     }
 
     getBody(){
@@ -37,39 +79,58 @@ export class GlCommand implements GlCommandEntry {
             throw new Error(`Command ${this.name} has ${this.outParams.length} out params - please implement manually.`);
         }
 
-        if(this.outParams.length > 0 && this.type !== 'void'){
+        if(this.outParams.length > 0 && this.type.name !== 'void'){
             throw new Error(`Command ${this.name} returns a value and has an out-param - please implement manually.`);
         }
 
-        let outParam = this.outParams[0];
+        const outParam = this.outParams[0];
 
-        const tsSignature = this.getTypescriptSignature();
+        let cSource = `napi_value napi_${this.name}(napi_env env, napi_callback_info info){`;
 
-        return `
-napi_value napi_${this.name}(napi_env env, napi_callback_info info){
-    ${this.inParams.length > 0 ? `GET_NAPI_PARAMS_INFO(${this.inParams.length}, "${tsSignature}");` : ''}
-    ${this.inParams.map((param, i) => `
-    ${Utils.getCParamCall(param.type)}(${param.name}, ${i});
-    `).join('')}
+        // get required params
+        if(this.getParams.length > 0){
+            cSource += `GET_NAPI_PARAMS_INFO(${this.getParams.length}, "${this.getTypescriptSignature()}");`;
+            cSource += this.getParams.map((param, i) => param.getGetParamMacro(i)).join('');
+            cSource += '\n\n';
+        }
 
-    ${this.outParams.map(param => `
-    ${Utils.outParamTypeToDeclarationType(param.type)} ${param.name};
-    `).join('')}
+        // declare out params
+        if(outParam){
+            cSource += outParam.type.outParamType + ' ' + outParam.name + ';';
+            cSource += '\n\n';
+        }
 
-    ${/* void doesn't return, so we don't wrap it in a napi-return call */ ''}
-    ${/* out param-functions have to return out param */ ''}
-    ${this.type === 'void' || outParam ? Utils.getGlCommandCall(this) + ';' : ''}
+        // don't directly return command return-value, bc:
+        // * void doesn't return, so we don't wrap it in a napi-return call
+        // * out param-functions have to return out param
+        if(this.type.isUndefined || outParam){
+            cSource += this.getGlCommandCall() + ';';
+        }
 
-    ${outParam ? Utils.glReturnTypeToNapiReturn(Utils.outParamTypeToDeclarationType(outParam.type)) + '(' + outParam.name + ');' : ''}
+        if(outParam){
+            cSource += outParam.getReturnMacro();
+        } else if(this.type.isUndefined){
+            cSource += this.getReturnMacro();
+        } else {
+            cSource += this.getReturnMacro(this.getGlCommandCall());
+        }
 
-    ${outParam ? '' : `${Utils.glReturnTypeToNapiReturn(this.type)}(${this.type === 'void' ? '' : Utils.getGlCommandCall(this)});`}
-}
-        `;
+        cSource += '\n}';
+
+        return cSource;
     }
 
     getTypescriptSignature(){
         return `
-            ${Utils.commandNameToExport(this.name)}(${this.inParams.map(param => param.name + ': ' + Utils.getTypescriptNameForCType(param.type)).join(', ')}): ${this.outParams.length > 0 ? Utils.getTypescriptNameForCType(Utils.outParamTypeToDeclarationType(this.outParams[0].type)) : Utils.getTypescriptNameForCType(this.type)}
+            ${this.getExportName()}(${this.getParams.map(param => param.name + ': ' + param.type.tsType).join(', ')}): ${this.outParams.length > 0 ? this.outParams[0].type.tsType : this.type.tsType}
         `.trim();
+    }
+
+    getGlCommandCall(): string {
+        return this.name + '(' + this.glParams.map(param => param.type.isOutType ? param.getPointerName() : param.name).join(', ') + ')';
+    }
+
+    getProcTypedef(): string {
+        return `typedef ${this.type.name} (APIENTRYP ${this.getGlPfnName()})(${this.glParams.map(param => `${param.type.name} ${param.name}`).join(', ')});`;
     }
 }

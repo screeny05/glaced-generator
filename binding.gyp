@@ -3,7 +3,7 @@
         {
             "target_name": "glace",
             "sources": [
-                "target/index.cc",
+                "target/glace.cc",
             ],
             "include_dirs": [
                 "target/deps/include",

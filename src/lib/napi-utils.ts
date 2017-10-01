@@ -4,50 +4,47 @@ import { join as joinPath } from 'path';
 import { readFile } from 'fs';
 import * as wordwrap from 'wordwrap';
 
-
 import { GlCommandEntry, GlEnum, GlCommand } from './gl-xml';
 
-export function isOutParameter(type: string): boolean {
-    return [
-        'GLboolean *',
-        'GLfloat *',
-        'GLint *',
-        //'GLuint *',
-        //'GLsizei *',
-    ].indexOf(type) !== -1;
-}
-
-export function outParamTypeToDeclarationType(type: string): string {
-    // TODO: probably not sufficient
-    return type.replace(' *', '');
-}
-
-export function outParamTypeToPointerArgument(type: string): string {
-    // TODO: probably not sufficient
-    return '&' + outParamTypeToDeclarationType(type);
-}
-
-export function hasCommandOutParameters(command: GlCommand): boolean {
-    return !!command.params.find(param => isOutParameter(param.type));
-}
-
-export function parseCommandEntry(entry: any): GlCommandEntry {
-    const name = entry.name[0]._.trim();
-    const type = entry.$$
+export function parseNameTypePair(entry: any): { name: string, type: string } {
+    const name: string = entry.name[0]._.trim();
+    const type: string = entry.$$
         .filter(children => children['#name'] !== 'name')
         .map(children => children._)
         .join('')
         .trim();
 
-    return { type, name };
+    return { name, type };
+}
+
+export function parseCommandEntry(entry: any): GlCommandEntry {
+    const { name, type } = parseNameTypePair(entry);
+    return new GlCommandEntry(name, type);
+}
+
+export function parseParamEntry(entry: any, command: GlCommand): GlCommandEntry {
+    const { name, type } = parseNameTypePair(entry);
+
+    const paramHint = command.hints && command.hints.params && command.hints.params[name];
+    let length: string | number | undefined = entry.$ && entry.$.len;
+    let forceOutparam: boolean | undefined = undefined;
+
+    if(paramHint && typeof paramHint.isOutType !== 'undefined'){
+        forceOutparam = paramHint.isOutType;
+    }
+
+    if(paramHint && paramHint.len){
+        length = paramHint.len;
+    }
+
+    return new GlCommandEntry(name, type, {
+        forceOutparam,
+        length
+    });
 }
 
 export function enumNameToExport(name: string): string {
     return name.replace(/^GL_/, '').replace(/^[0-9]/, '_$&');
-}
-
-export function commandNameToExport(name: string): string {
-    return name.replace(/^gl(\w)/, (match, group0) => group0.toLowerCase());
 }
 
 export function flattenXmlSectToString(xmlEntry, transformator: (sect: any, parent: any) => string = (e) => e._, trimDown: boolean = false): string {
@@ -111,162 +108,4 @@ export async function parseXmlFile(filename: string){
 
 export function satisfiesVersionRequirement(requiredApi: string, requiredVersion: string, givenApi: string, givenVersion: string): boolean {
     return requiredApi.toLowerCase() === givenApi.toLowerCase() && parseFloat(givenVersion) <= parseFloat(requiredVersion);
-}
-
-export function glReturnTypeToNapiReturn(type: string): string {
-    switch(type){
-        case 'void':
-            return 'RETURN_NAPI_UNDEFINED';
-        case 'GLboolean':
-            return 'RETURN_NAPI_BOOL';
-        case 'const GLchar *':
-        case 'const GLubyte *':
-            return 'RETURN_NAPI_STRING';
-        case 'GLint':
-        case 'GLenum':
-        case 'GLuint':
-        case 'GLfloat':
-            return 'RETURN_NAPI_NUMBER';
-        case 'GLsync':
-        case 'void *':
-            return '// TODO - ' + type;
-        default:
-            throw new TypeError(`Unknown return type '${type}'`);
-    }
-}
-
-export function getGlPfnName(name: string): string {
-    return 'PFN' + name.replace('_', '').toUpperCase() + 'PROC';
-}
-
-export function getTypescriptNameForCType(ctype: string): string {
-    switch(ctype){
-        case 'void':
-            return 'void';
-        case 'GLenum':
-        case 'GLint':
-        case 'GLsizei':
-        case 'GLsizeiptr':
-        case 'GLintptr':
-        case 'GLuint':
-        case 'GLfloat':
-        case 'GLbitfield':
-        case 'GLbyte':
-        case 'GLubyte':
-        case 'GLshort':
-        case 'GLushort':
-        case 'GLdouble':
-        case 'GLuint64':
-            return 'number';
-        case 'GLboolean':
-            return 'boolean';
-        case 'const GLchar *':
-            return 'string';
-        case 'const void *':
-            return 'ArrayBufferView | ArrayBuffer'
-        case 'const GLfloat *':
-            return 'Float32Array';
-        case 'const GLint *':
-            return 'Int32Array';
-        case 'const GLuint *':
-        case 'const GLsizei *':
-        case 'const GLintptr *':
-        case 'const GLsizeiptr *':
-        case 'const GLenum *':
-        case 'const GLdouble *':
-        case 'const GLubyte *':
-        case 'const GLbyte *':
-        case 'const GLshort *':
-        case 'const GLushort *':
-            return 'number[]';
-        case 'const GLboolean *':
-            return 'boolean[]';
-        default:
-            return 'any';
-    }
-}
-
-export function getGlCommandCall(command: GlCommand): string {
-    return command.name + '(' + command.params.map(param => isOutParameter(param.type) ? outParamTypeToPointerArgument(param.name) : param.name).join(', ') + ')';
-}
-
-export function getCParamCall(paramType: string): string {
-    switch(paramType){
-        case 'GLint':
-        case 'GLsizei':
-        case 'GLintptr':
-        case 'GLsizeiptr':
-            return 'GET_NAPI_PARAM_INT32';
-        case 'GLboolean':
-            return 'GET_NAPI_PARAM_BOOL';
-        case 'GLenum':
-            return 'GET_NAPI_PARAM_GLENUM';
-        case 'GLuint':
-            return 'GET_NAPI_PARAM_GLUINT';
-        case 'GLbyte':
-            return 'GET_NAPI_PARAM_INT8';
-        case 'GLubyte':
-            return 'GET_NAPI_PARAM_UINT8';
-        case 'GLshort':
-            return 'GET_NAPI_PARAM_INT16';
-        case 'GLushort':
-            return 'GET_NAPI_PARAM_UINT16';
-        case 'GLfloat':
-            return 'GET_NAPI_PARAM_FLOAT';
-        case 'GLdouble':
-            return 'GET_NAPI_PARAM_DOUBLE';
-        case 'GLuint64':
-            return 'GET_NAPI_PARAM_UINT64';
-        case 'const GLchar *':
-            return 'GET_NAPI_PARAM_STRING';
-        case 'const void *':
-            return 'GET_NAPI_PARAM_ARRAY_BUFFER';
-        case 'GLbitfield':
-            return 'GET_NAPI_PARAM_UINT32';
-        case 'const GLint *':
-            return 'GET_NAPI_PARAM_TYPED_ARRAY_INT32';
-        case 'const GLuint *':
-        case 'const GLenum *':
-            return 'GET_NAPI_PARAM_ARRAY_UINT32';
-        case 'const GLfloat *':
-            return 'GET_NAPI_PARAM_TYPED_ARRAY_FLOAT32';
-        case 'const GLdouble *':
-            return 'GET_NAPI_PARAM_ARRAY_DOUBLE';
-        case 'const GLubyte *':
-            return 'GET_NAPI_PARAM_ARRAY_UINT8';
-        case 'const GLbyte *':
-            return 'GET_NAPI_PARAM_ARRAY_INT8';
-        case 'const GLshort *':
-            return 'GET_NAPI_PARAM_ARRAY_INT16';
-        case 'const GLushort *':
-            return 'GET_NAPI_PARAM_ARRAY_UINT16';
-        case 'const GLboolean *':
-            return 'GET_NAPI_PARAM_ARRAY_BOOL';
-
-        case 'const GLsizei *':
-        case 'const GLintptr *':
-        case 'const GLsizeiptr *':
-            throw new TypeError(`Type ${paramType} should be checked before using 'GET_NAPI_PARAM_TYPED_ARRAY_INT32' (also update getTypescriptNameForCType)`);
-        case 'const GLchar *const*':
-        case 'const void *const*':
-        case 'void *':
-        case 'void **':
-        case 'GLfloat *':
-        case 'GLdouble *':
-        case 'GLushort *':
-        case 'GLubyte *':
-        case 'GLboolean *':
-        case 'GLchar *':
-        case 'GLenum *':
-        case 'GLint *':
-        case 'GLuint *':
-        case 'GLsizei *':
-        case 'GLint64 *':
-        case 'GLuint64 *':
-        case 'GLsync':
-        case 'GLDEBUGPROC':
-            throw new TypeError(`Type ${paramType} is out-type - custom handling has to be implemented.`);
-        default:
-            throw new TypeError(`Type '${paramType}' unknown - no CParamCall found.`);
-    }
 }

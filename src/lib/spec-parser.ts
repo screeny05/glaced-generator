@@ -76,11 +76,35 @@ export default class GlSpecParser {
     isApiCommandWhitelisted(name: string): boolean {
         // TODO: check GET_NAPI_PARAM_ARRAY_
         return [
+            'glGetBooleanv',
+            'glGetFloatv',
+            //'glGetBufferParameteriv',
+            'glGetFramebufferAttachmentParameteriv',
+            'glGetIntegerv',
+            //'glGetProgramiv',
+            //'glGetRenderbufferParameteriv',
+            //'glGetShaderiv',
+            //'glGetTexParameterfv',
+            //'glGenBuffers',
+            //'glGetTexParameteriv',
+            //'glGetUniformfv',
+            //'glGetUniformiv',
+            //'glGetVertexAttribfv',
+            //'glGetVertexAttribiv',
+            //'glTexImage2D', - hints
+            //'glTexSubImage2D', - hints
+            //'glVertexAttrib1fv',
+            //'glVertexAttrib2fv',
+            //'glVertexAttrib3fv',
+            //'glVertexAttrib4fv',
+            //'glTexParameterfv',
+            //'glTexParameteriv',
+
             // return number[] via out
-            'glGenBuffers',
-            'glGenFramebuffers',
-            'glGenRenderbuffers',
-            'glGenTextures',
+            //'glGenBuffers',
+            //'glGenFramebuffers',
+            //'glGenRenderbuffers',
+            //'glGenTextures',
 
             // return GL_ACTIVE_INFO
             'glGetActiveAttrib',
@@ -193,17 +217,15 @@ export default class GlSpecParser {
                     // discard if not required
                     if(this.api.requiredCommandsNames.indexOf(name) === -1){ return; }
 
+                    const glCommand: GlCommand = new GlCommand(name, type);
+
                     if(command.param){
                         command.param.forEach(param => {
-                            params.push(Utils.parseCommandEntry(param));
-
-                            /*if(param.$ && param.$.len){
-                                console.log(name, params[params.length - 1], param.$.len)
-                            }*/
+                            params.push(Utils.parseParamEntry(param, glCommand));
                         });
                     }
 
-                    const glCommand: GlCommand = new GlCommand(type, name, params);
+                    glCommand.setParameters(params);
 
                     const prewrittenFunction = this.prewrittenFunctions.get(name);
                     if(prewrittenFunction){
