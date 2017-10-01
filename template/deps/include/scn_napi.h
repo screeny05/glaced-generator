@@ -115,7 +115,7 @@
 #define GET_NAPI_PARAM_TYPED_ARRAY_FLOAT32(name, i) GET_NAPI_PARAM_TYPED_ARRAY(name, i, float*, napi_float32_array, "Float32Array");
 #define GET_NAPI_PARAM_TYPED_ARRAY_FLOAT64(name, i) GET_NAPI_PARAM_TYPED_ARRAY(name, i, double*, napi_float64_array, "Float64Array");
 #define GET_NAPI_PARAM_TYPED_ARRAY_INT32(name, i) GET_NAPI_PARAM_TYPED_ARRAY(name, i, int32_t*, napi_int32_array, "Int32Array");
-
+#define GET_NAPI_PARAM_TYPED_ARRAY_UINT32(name, i) GET_NAPI_PARAM_TYPED_ARRAY(name, i, uint32_t*, napi_uint32_array, "Uint32Array");
 
 #define GET_NAPI_PARAM_ARRAY_BASE(name, i, cType, orgType, napiGetCall, readableType) \
     bool isArray_##name; \

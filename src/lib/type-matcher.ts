@@ -22,7 +22,7 @@ const ReturnMacro: NativeTypeMacroCollection<NativeTypeReturnMacro> = {
     STRING: val => `RETURN_NAPI_STRING(${val});`,
     BOOLEAN: val => `RETURN_NAPI_BOOL(${val});`,
 
-    ARRAY_BUFFER: val => `RETURN_NAPI_ARRAY_BUFFER(${val});`,
+    ARRAY_BUFFER: guardMissingLength('ARRAY_BUFFER', (val, length) => `RETURN_NAPI_ARRAY_BUFFER(${length}, ${val});`),
 
     ARRAY_NUMBER: guardMissingLength('ARRAY_BOOLEAN', (val, length) => `RETURN_NAPI_ARRAY_NUMBER(${val}, ${length});`),
     ARRAY_BOOLEAN: guardMissingLength('ARRAY_BOOLEAN', (val, length) => `RETURN_NAPI_ARRAY_BOOL(${val}, ${length});`),
@@ -217,6 +217,12 @@ nativeTypeCollection.add(new NativeType({
     returnMacro: ReturnMacro.ARRAY_BUFFER,
     getParamMacro: GetParamMacro.ARRAY_BUFFER
 }));
+nativeTypeCollection.add(new NativeType({
+    name: 'void *',
+    tsType: 'ArrayBuffer | ArrayBufferView',
+    returnMacro: ReturnMacro.ARRAY_BUFFER,
+    getParamMacro: GetParamMacro.ARRAY_BUFFER,
+}));
 
 // typed arrays
 nativeTypeCollection.add(new NativeType({
@@ -235,6 +241,12 @@ nativeTypeCollection.add(new NativeType({
     name: 'const GLint *',
     tsType: 'Int32Array',
     getParamMacro: GetParamMacro.TYPED_ARRAY_INT32
+}));
+
+nativeTypeCollection.add(new NativeType({
+    name: 'const GLuint *',
+    tsType: 'Uint32Array',
+    getParamMacro: GetParamMacro.TYPED_ARRAY_UINT32
 }));
 
 // general arrays
@@ -268,6 +280,14 @@ nativeTypeCollection.add(new NativeType({
     outParamType: 'GLboolean',
     isOutType: true
 }));
+/*nativeTypeCollection.add(new NativeType({
+    name: 'void *',
+    tsType: 'ArrayBuffer | ArrayBufferView',
+    returnMacro: ReturnMacro.ARRAY_BUFFER,
+    getParamMacro: GetParamMacro.ARRAY_BUFFER,
+    outParamType: 'void',
+    isOutType: true
+}));*/
 
 nativeTypeCollection.add(NativeType.newOutNumber('GLfloat *', 'GLfloat', 'Float32Array', 'TYPED_ARRAY_FLOAT'));
 nativeTypeCollection.add(NativeType.newOutNumber('GLint *', 'GLint', 'Int32Array', 'TYPED_ARRAY_INT', 32));

@@ -12,8 +12,10 @@ export class GlCommandEntry {
     type: NativeType;
     name: string;
     length?: number | string;
-    isSynthetic?: boolean = false;
+    isSynthetic: boolean = false;
     forceOutparam?: boolean;
+    isReplacedWithLocal: boolean = false;
+    glCallString?: string;
 
     constructor(name: string, type: NativeType | string, data?: Partial<GlCommandEntry>){
         this.name = name;
@@ -63,9 +65,34 @@ export class GlCommand extends GlCommandEntry {
     }
 
     setParameters(params: GlCommandEntry[]){
+        var replaceParams: { org: string, new: string }[] = [];
         this.params = params;
-        this.hints && this.hints.syntheticParams && this.hints.syntheticParams.forEach(param => this.params.push(new GlCommandEntry(param.name, param.type, { isSynthetic: true })));
-        this.getParams = this.params.filter(param => !param.type.isOutType);
+
+        if(this.hints && this.hints.params){
+            Object.keys(this.hints.params).forEach(key => {
+                const paramHint = this.hints && this.hints.params && this.hints.params[key];
+                if(!paramHint || !paramHint.replaceWithLocal){
+                    return;
+                }
+
+                const toReplaceParam = this.params.find(param => param.name === key);
+                if(!toReplaceParam){
+                    return;
+                }
+
+                toReplaceParam.name = paramHint.replaceWithLocal;
+                toReplaceParam.glCallString = paramHint.glCallString;
+                toReplaceParam.isReplacedWithLocal = true;
+            });
+        }
+
+        if(this.hints && this.hints.syntheticParams){
+            this.hints.syntheticParams.forEach(param =>
+                this.params.push(new GlCommandEntry(param.name, param.type, { isSynthetic: true }))
+            );
+        }
+
+        this.getParams = this.params.filter(param => !param.type.isOutType && !param.isReplacedWithLocal);
         this.glParams = this.params.filter(param => !param.isSynthetic);
         this.outParams = this.params.filter(param => param.type.isOutType && !param.isSynthetic);
     }
@@ -127,7 +154,7 @@ export class GlCommand extends GlCommandEntry {
     }
 
     getGlCommandCall(): string {
-        return this.name + '(' + this.glParams.map(param => param.type.isOutType ? param.getPointerName() : param.name).join(', ') + ')';
+        return this.name + '(' + this.glParams.map(param => param.glCallString ? param.glCallString : param.type.isOutType ? param.getPointerName() : param.name).join(', ') + ')';
     }
 
     getProcTypedef(): string {
