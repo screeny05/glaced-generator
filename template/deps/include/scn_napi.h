@@ -31,15 +31,18 @@
     NAPI_CALL(env, napi_set_named_property(env, returnValue, "type", val)); \
     return returnValue;
 
-#define RETURN_NAPI_ARRAY_NUMBER(array, count) \
+#define RETURN_NAPI_ARRAY_BASE(array, length, napiCreateCall) \
     napi_value arrayValue; \
     napi_value singleValue; \
-    napi_create_array_with_length(env, count, &arrayValue); \
-    for(int i = 0; i < count; i++){ \
-        NAPI_CALL(env, napi_create_number(env, array[i], &singleValue)); \
+    napi_create_array_with_length(env, length, &arrayValue); \
+    for(int i = 0; i < length; i++){ \
+        NAPI_CALL(env, napiCreateCall(env, ((void**)array)[i], &singleValue)); \
         NAPI_CALL(env, napi_set_element(env, arrayValue, i, singleValue)); \
     } \
     return arrayValue;
+
+#define RETURN_NAPI_ARRAY_NUMBER(array, length) RETURN_NAPI_ARRAY_BASE(array, length, napi_create_number);
+#define RETURN_NAPI_ARRAY_BOOL(array, length) RETURN_NAPI_ARRAY_BASE(array, length, napi_get_boolean);
 
 #define GET_NAPI_PARAMS_INFO(expectedArgc, signature) \
     napi_valuetype valuetype; \

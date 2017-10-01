@@ -24,7 +24,8 @@ const ReturnMacro: NativeTypeMacroCollection<NativeTypeReturnMacro> = {
 
     ARRAY_BUFFER: val => `RETURN_NAPI_ARRAY_BUFFER(${val});`,
 
-    ARRAY_NUMBER: val => `RETURN_NAPI_ARRAY_NUMBER(${val})`,
+    ARRAY_NUMBER: guardMissingLength('ARRAY_BOOLEAN', (val, length) => `RETURN_NAPI_ARRAY_NUMBER(${val}, ${length});`),
+    ARRAY_BOOLEAN: guardMissingLength('ARRAY_BOOLEAN', (val, length) => `RETURN_NAPI_ARRAY_BOOL(${val}, ${length});`),
 
     TYPED_ARRAY_UINT32: guardMissingLength('TYPED_ARRAY_UINT32', (val, length) => `RETURN_NAPI_TYPED_ARRAY_UINT32(${val}, ${length});`),
     TYPED_ARRAY_INT32: guardMissingLength('TYPED_ARRAY_INT32', (val, length) => `RETURN_NAPI_TYPED_ARRAY_INT32(${val}, ${length});`),
@@ -99,7 +100,7 @@ export class NativeType {
         return numberType;
     }
 
-    static newOutNumber(name: string, outParamType: string, type: NumberType, bits?: number): NativeType {
+    static newOutNumber(name: string, outParamType: string, tsType: string, type: NumberType, bits?: number): NativeType {
         const numberType = NativeType.newNumber(name, type, bits);
         const returnMacro = ReturnMacro[type + (bits ? bits : '')];
 
@@ -110,6 +111,7 @@ export class NativeType {
         numberType.isOutType = true;
         numberType.outParamType = outParamType;
         numberType.returnMacro = returnMacro
+        numberType.tsType = tsType;
 
         return numberType;
     }
@@ -125,9 +127,12 @@ class NativeTypeCollection {
         let associatedTypes = this.types.get(type.name);
         if(!associatedTypes){
             associatedTypes = [];
-            this.types.set(type.name, associatedTypes);
         }
         associatedTypes.push(type);
+
+        // get outTypes first, they should be the default type, when no hint is given
+        associatedTypes = associatedTypes.sort((a, b) => a.isOutType ? -1 : b.isOutType ? 1 : 0);
+        this.types.set(type.name, associatedTypes);
     }
 
     get(name: string, forceOutparam?: boolean): NativeType {
@@ -258,12 +263,12 @@ nativeTypeCollection.add(new NativeType({
 // out-params
 nativeTypeCollection.add(new NativeType({
     name: 'GLboolean *',
-    tsType: 'boolean',
-    returnMacro: ReturnMacro.BOOLEAN,
+    tsType: 'boolean[]',
+    returnMacro: ReturnMacro.ARRAY_BOOLEAN,
     outParamType: 'GLboolean',
     isOutType: true
 }));
 
-nativeTypeCollection.add(NativeType.newOutNumber('GLfloat *', 'GLfloat', 'TYPED_ARRAY_FLOAT'));
-nativeTypeCollection.add(NativeType.newOutNumber('GLint *', 'GLint', 'TYPED_ARRAY_INT', 32));
-nativeTypeCollection.add(NativeType.newOutNumber('GLuint *', 'GLuint', 'TYPED_ARRAY_UINT', 32));
+nativeTypeCollection.add(NativeType.newOutNumber('GLfloat *', 'GLfloat', 'Float32Array', 'TYPED_ARRAY_FLOAT'));
+nativeTypeCollection.add(NativeType.newOutNumber('GLint *', 'GLint', 'Int32Array', 'TYPED_ARRAY_INT', 32));
+nativeTypeCollection.add(NativeType.newOutNumber('GLuint *', 'GLuint', 'Uint32Array', 'TYPED_ARRAY_UINT', 32));

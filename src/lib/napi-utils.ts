@@ -29,12 +29,12 @@ export function parseParamEntry(entry: any, command: GlCommand): GlCommandEntry 
     let length: string | number | undefined = entry.$ && entry.$.len;
     let forceOutparam: boolean | undefined = undefined;
 
-    if(paramHint && typeof paramHint.isOutType !== 'undefined'){
-        forceOutparam = paramHint.isOutType;
-    }
-
     if(paramHint && paramHint.len){
         length = paramHint.len;
+    }
+
+    if(paramHint && typeof paramHint.isOutType !== 'undefined'){
+        forceOutparam = paramHint.isOutType;
     }
 
     return new GlCommandEntry(name, type, {

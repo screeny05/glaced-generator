@@ -1,18 +1,14 @@
 import { NativeType, nativeTypeCollection } from './type-matcher';
 
-const setParamAsOut = (name: string, len?: string | number) => ({
+const setParamLength = (name: string, len: string | number) => ({
     params: {
-        [name]: {
-            isOutType: true,
-            len
-        }
+        [name]: { len }
     }
 });
 
 const addLengthParam = (name: string, lengthName: string = 'length') => ({
     params: {
         [name]: {
-            isOutType: true,
             len: lengthName
         }
     },
@@ -36,24 +32,20 @@ export interface NativeHintsCommand {
 }
 
 export const nativeHintsCommands: { [commandName: string]: NativeHintsCommand } = {
-    // params is only the return number[]
-    glGetVertexAttribiv: setParamAsOut('params'),
-    glGetVertexAttribfv: setParamAsOut('params'),
-    glGenBuffers: setParamAsOut('buffers'),
-    glGenFramebuffers: setParamAsOut('framebuffers'),
-    glGenRenderbuffers: setParamAsOut('renderbuffers'),
-    glGenTextures: setParamAsOut('textures'),
-    glGetFramebufferAttachmentParameteriv: setParamAsOut('params'),
-
     // hardcoded length, always should be 1
-    glGetTexParameterfv: setParamAsOut('params', 1),
-    glGetTexParameteriv: setParamAsOut('params', 1),
-    glGetShaderiv: setParamAsOut('params', 1),
-    glGetRenderbufferParameteriv: setParamAsOut('params', 1),
-    glGetProgramiv: setParamAsOut('params', 1),
-    glGetBufferParameteriv: setParamAsOut('params', 1),
+    glGetTexParameterfv: setParamLength('params', 1),
+    glGetTexParameteriv: setParamLength('params', 1),
+    glGetShaderiv: setParamLength('params', 1),
+    glGetRenderbufferParameteriv: setParamLength('params', 1),
+    glGetProgramiv: setParamLength('params', 1),
+    glGetBufferParameteriv: setParamLength('params', 1),
 
     // needs additional parameter for determining array-size
     glGetUniformiv: addLengthParam('params'),
     glGetUniformfv: addLengthParam('params'),
+    glGetBooleanv: addLengthParam('data'),
+    glGetDoublev: addLengthParam('data'),
+    glGetFloatv: addLengthParam('data'),
+    glGetIntegerv: addLengthParam('data'),
+    glGetFramebufferAttachmentParameteriv: addLengthParam('params')
 };

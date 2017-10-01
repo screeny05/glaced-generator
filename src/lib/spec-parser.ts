@@ -76,11 +76,11 @@ export default class GlSpecParser {
     isApiCommandWhitelisted(name: string): boolean {
         // TODO: check GET_NAPI_PARAM_ARRAY_
         return [
-            'glGetBooleanv',
-            'glGetFloatv',
+            //'glGetBooleanv',
+            //'glGetFloatv',
+            //'glGetIntegerv',
             //'glGetBufferParameteriv',
-            'glGetFramebufferAttachmentParameteriv',
-            'glGetIntegerv',
+            //'glGetFramebufferAttachmentParameteriv',
             //'glGetProgramiv',
             //'glGetRenderbufferParameteriv',
             //'glGetShaderiv',
