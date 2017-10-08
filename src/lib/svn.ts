@@ -56,12 +56,16 @@ const downloadSvnFileList = async function(url: string, files: any[], filter: Re
     }
 };
 
-export async function downloadSvnDirectory(url: string, filter: RegExp, targetDirectory: string): Promise<any> {
+export async function downloadSvnDirectory(url: string, filter: RegExp, targetDirectory: string, writeRevisionFile: boolean = false): Promise<any> {
     const directory = await getXml(url);
     const index = directory.svn.index[0];
     const { file, dir } = index;
 
     await promisify(mkdirp)(targetDirectory);
+
+    if(writeRevisionFile){
+        await promisify(writeFile)(joinPath(targetDirectory, 'revision'), index.$.rev);
+    }
 
     await downloadSvnFileList(url, file, filter, targetDirectory);
 

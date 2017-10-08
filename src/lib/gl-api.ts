@@ -1,6 +1,6 @@
 import { promisify } from 'util';
 import { join as joinPath } from 'path';
-import { writeFile, mkdir } from 'fs';
+import { readFile, writeFile, mkdir } from 'fs';
 import * as copy from 'recursive-copy';
 import * as rimraf from 'rimraf';
 import { format as formatTs } from 'prettier';
@@ -43,10 +43,17 @@ export default class GlApi {
     }
 
     async generateFiles(folder: string){
+        const glacePackageInfo = JSON.parse(await promisify(readFile)('./package.json'));
+        const glContextName = this.api.toUpperCase() + 'Context';
+
         let tsSource = `
 import * as bindings from 'bindings';
 
-interface GLContext {
+export interface ${glContextName} {
+    bindingsApi: string;
+    bindingsVersion: string;
+    bindingsRevision: number;
+
     ${mapToString(this.enums, enumValue => `
         ${Utils.enumNameToExport(enumValue.name)}: number;
     `)}
@@ -57,13 +64,15 @@ interface GLContext {
     `, '\n\n')}
 }
 
-const glContext: GLContext = bindings('glace');
+export const glContext: ${glContextName} = bindings('glace');
+
+glContext.bindingsApi = '${this.api}';
+glContext.bindingsVersion = '${this.version}';
+glContext.bindingsRevision = ${this.revision};
 
 ${mapToString(this.enums, enumValue => `
     glContext.${Utils.enumNameToExport(enumValue.name)} = ${enumValue.value};
 `)}
-
-export default glContext;
         `;
 
         // https://www.khronos.org/opengl/wiki/Load_OpenGL_Functions
@@ -108,25 +117,86 @@ void glaceLoadGl(GLACEloadproc load){
     `)}
 }
 
-${mapToString(this.commands, command =>
-    command.getBody()
-)}
+napi_env _env;
+napi_value _loadproc;
+
+void* loadprocProxy(const char *name) {
+    int64_t value;
+    napi_value arg;
+    napi_value resultValue;
+    napi_value global;
+
+    NAPI_CALL(_env, napi_get_global(_env, &global));
+    NAPI_CALL_BASE(_env, napi_create_string_utf8(_env, name, -1, &arg), 0);
+
+    napi_value* argv = &arg;
+    NAPI_CALL_BASE(_env, napi_call_function(_env, global, _loadproc, 1, argv, &resultValue), 0);
+
+    NAPI_CALL_BASE(_env, napi_get_value_int64(_env, resultValue, &value), 0);
+    return (void *)value;
+}
+
+napi_value napi_glaceLoadGl(napi_env env, napi_callback_info info) {
+    GET_NAPI_PARAMS_INFO(1, "glaceLoadGl(loadproc: (name: string) => number): void");
+    GET_NAPI_PARAM_FUNCTION(loadproc, 0);
+
+    _env = env;
+    _loadproc = loadproc;
+
+    glaceLoadGl((GLACEloadproc)loadprocProxy);
+
+    _env = NULL;
+    _loadproc = NULL;
+
+    RETURN_NAPI_UNDEFINED();
+}
+
+${mapToString(this.commands, command => command.getBody())}
 
 void Init(napi_env env, napi_value exports, napi_value module, void* priv){
     napi_property_descriptor properties[] = {
+        DECLARE_NAPI_PROPERTY("glaceLoadGl", napi_glaceLoadGl),
         ${mapToString(this.commands, (command: GlCommand) => `
             DECLARE_NAPI_PROPERTY("${command.getExportName()}", napi_${command.name}),
         `)}
     };
 
-    NAPI_CALL_RETURN_VOID(env, napi_define_properties(env, exports, ${this.commands.length}, properties));
+    NAPI_CALL_RETURN_VOID(env, napi_define_properties(env, exports, ${this.commands.length + 1}, properties));
 }
 
 NAPI_MODULE(gles, Init);
 
 #ifdef __cplusplus
 }
-#endif`
+#endif`;
+
+        const packageJsonSource = JSON.stringify({
+            name: 'node-glace-' + this.api + '-' + this.version,
+            version: glacePackageInfo.version + '-' + this.revision,
+            author: glacePackageInfo.author,
+            license: glacePackageInfo.license,
+            main: 'dist/glace.js',
+            dependencies: {
+                bindings: glacePackageInfo.dependencies.bindings
+            },
+            devDependencies: {
+                typescript: glacePackageInfo.dependencies.typescript
+            },
+            scripts: {
+                build: 'node-gyp build && tsc'
+            },
+            types: './glace.d.ts',
+        }, null, '    ');
+
+        const tsConfigSource = JSON.stringify({
+            compilerOptions: {
+                module: 'commonjs',
+                target: 'ES2017',
+                outDir: 'dist',
+                sourceMap: true
+            },
+            exclude: ['node_modules']
+        }, null, '    ');
 
         // format c source with clang
         cSource = await formatC(cSource);
@@ -143,6 +213,8 @@ NAPI_MODULE(gles, Init);
         await promisify(mkdir)(folder);
         await promisify(writeFile)(joinPath(folder, 'glace.ts'), tsSource, 'utf8');
         await promisify(writeFile)(joinPath(folder, 'glace.cc'), cSource, 'utf8');
+        await promisify(writeFile)(joinPath(folder, 'package.json'), packageJsonSource, 'utf8');
+        await promisify(writeFile)(joinPath(folder, 'tsconfig.json'), tsConfigSource, 'utf8');
         await copy('./template/glace.h', joinPath(folder, 'glace.h'));
         await copy('./template/deps/', joinPath(folder, 'deps'));
     }

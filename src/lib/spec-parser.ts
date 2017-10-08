@@ -1,10 +1,17 @@
 import { promisify } from 'util';
-import { join as joinPath } from 'path';
+import { join as joinPath, extname as getExtension } from 'path';
 import { readFile, readdir } from 'fs';
 
 import * as Utils from './napi-utils';
 import { GlCommandEntry, GlEnum, GlCommand } from './gl-xml';
 import GlApi from './gl-api';
+
+export interface GlSpecParserOptions {
+    api: string;
+    version: string;
+    source: string;
+    target: string;
+}
 
 export default class GlSpecParser {
     specifications: Map<string, any> = new Map();
@@ -23,6 +30,10 @@ export default class GlSpecParser {
     async parseXmlFolder(foldername: string, map: Map<string, any>, throws: boolean = false){
         const files = await promisify(readdir)(foldername);
         await Promise.all(files.map(async file => {
+            if(getExtension(file) !== '.xml'){
+                return;
+            }
+
             try {
                 map.set(file, await Utils.parseXmlFile(joinPath(foldername, file)));
             } catch(e) {
@@ -35,6 +46,7 @@ export default class GlSpecParser {
 
     async parseSpecFolder(foldername: string){
         await this.parseXmlFolder(foldername, this.specifications);
+        this.api.revision = await promisify(readFile)(joinPath(foldername, 'revision'), 'utf8');
     }
 
     async parseDocFolder(foldername: string){
@@ -244,5 +256,17 @@ ${orgDef}
             }
             command.docs = doc;
         });
+    }
+
+    static async generateBindings(options: GlSpecParserOptions): Promise<void> {
+        const parser = new GlSpecParser(options.api, options.version);
+
+        await parser.parseSpecFolder(joinPath(options.source, 'spec'));
+        await parser.parseDocFolder(joinPath(options.source, 'doc'));
+        await parser.loadPrewrittenFunctions('./template/functions');
+
+        parser.buildApi();
+
+        await parser.api.generateFiles(options.target);
     }
 }
