@@ -139,7 +139,7 @@ class NativeTypeCollection {
         const associatedTypes = this.types.get(name);
 
         if(!associatedTypes){
-            return new NativeType({ name: 'spec-type ' + name });
+            return new NativeType({ name });
         }
 
         if(typeof forceOutparam === 'boolean'){

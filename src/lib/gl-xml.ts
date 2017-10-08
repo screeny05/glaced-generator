@@ -71,18 +71,24 @@ export class GlCommand extends GlCommandEntry {
         if(this.hints && this.hints.params){
             Object.keys(this.hints.params).forEach(key => {
                 const paramHint = this.hints && this.hints.params && this.hints.params[key];
-                if(!paramHint || !paramHint.replaceWithLocal){
+                const toEditParam = this.params.find(param => param.name === key);
+
+                if(!paramHint || !toEditParam){
                     return;
                 }
 
-                const toReplaceParam = this.params.find(param => param.name === key);
-                if(!toReplaceParam){
-                    return;
+                if(paramHint.replaceWithLocal){
+                    toEditParam.name = paramHint.replaceWithLocal;
+                    toEditParam.isReplacedWithLocal = true;
                 }
 
-                toReplaceParam.name = paramHint.replaceWithLocal;
-                toReplaceParam.glCallString = paramHint.glCallString;
-                toReplaceParam.isReplacedWithLocal = true;
+                if(paramHint.glCallString){
+                    toEditParam.glCallString = paramHint.glCallString;
+                }
+
+                if(paramHint.type){
+                    toEditParam.type = paramHint.type;
+                }
             });
         }
 

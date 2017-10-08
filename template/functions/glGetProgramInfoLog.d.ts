@@ -1,0 +1,1 @@
+glGetProgramInfoLog(program: number): string;

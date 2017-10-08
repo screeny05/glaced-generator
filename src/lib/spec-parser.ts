@@ -74,38 +74,9 @@ export default class GlSpecParser {
     }
 
     isApiCommandWhitelisted(name: string): boolean {
+        return true;
         // TODO: check GET_NAPI_PARAM_ARRAY_
-        return [
-            //'glGetBooleanv',
-            //'glGetFloatv',
-            //'glGetIntegerv',
-            //'glGetBufferParameteriv',
-            //'glGetFramebufferAttachmentParameteriv',
-            //'glGetProgramiv',
-            //'glGetRenderbufferParameteriv',
-            //'glGetShaderiv',
-            //'glGetTexParameterfv',
-            //'glGenBuffers',
-            //'glGetTexParameteriv',
-            //'glGetUniformfv',
-            //'glGetUniformiv',
-            //'glGetVertexAttribfv',
-            //'glGetVertexAttribiv',
-            //'glTexImage2D', - hints
-            //'glTexSubImage2D', - hints
-            //'glVertexAttrib1fv',
-            //'glVertexAttrib2fv',
-            //'glVertexAttrib3fv',
-            //'glVertexAttrib4fv',
-            //'glTexParameterfv',
-            //'glTexParameteriv',
-
-            // return number[] via out
-            //'glGenBuffers',
-            //'glGenFramebuffers',
-            //'glGenRenderbuffers',
-            //'glGenTextures',
-
+        /*return [
             // return GL_ACTIVE_INFO
             'glGetActiveAttrib',
             'glGetActiveUniform',
@@ -122,40 +93,13 @@ export default class GlSpecParser {
 
             // weirdness
             'glGetShaderSource',
-            //'glReadPixels',
             'glShaderSource',
             'glClientWaitSync',
             'glDeleteSync',
-            'glDrawElements',
-            'glVertexAttribPointer',
-
-            // not webgl compatible
-            'glShaderBinary',
-
-            // not webgl compatible - typedarray & size
-            //'glDeleteBuffers',
-            //'glDeleteFramebuffers',
-            //'glDeleteRenderbuffers',
-            //'glDeleteTextures',
-            //'glUniform1fv',
-            //'glUniform1iv',
-            //'glUniform2fv',
-            //'glUniform2iv',
-            //'glUniform3iv',
-            //'glUniform3fv',
-            //'glUniform4iv',
-            //'glUniform4fv',
-            //'glUniformMatrix2fv',
-            //'glUniformMatrix3fv',
-            //'glUniformMatrix4fv',
-            //'glBufferData',
-            //'glBufferSubData',
-            //'glCompressedTexImage2D',
-            //'glCompressedTexSubImage2D',
 
             // void* as gluint
             'glGetVertexAttribPointerv',
-        ].indexOf(name) === -1;
+        ].indexOf(name) === -1;*/
     }
 
     findRequiredApiFeatures(){

@@ -92,6 +92,8 @@ extern "C" {
 #include <scn_napi.h>
 #include "glace.h"
 
+// opengl constants
+${this.enums.map(entry => `#define ${entry.name} ${entry.value}`).join('\n')}
 
 // define fn pointers
 ${mapToString(this.commands, (command: GlCommand) => command.getProcTypedef())}
@@ -105,8 +107,6 @@ void glaceLoadGl(GLACEloadproc load){
         ${command.name} = (${command.getGlPfnName()})load("${command.name}");
     `)}
 }
-
-${/*this.enums.map(entry => `#define ${entry.name} ${entry.value}`).join('\n')*/''}
 
 ${mapToString(this.commands, command =>
     command.getBody()

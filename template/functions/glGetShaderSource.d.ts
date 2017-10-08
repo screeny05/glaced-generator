@@ -1,0 +1,1 @@
+glGetShaderSource(shader: number): string;

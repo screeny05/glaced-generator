@@ -34,6 +34,7 @@ export interface NativeHintsCommand {
             len?: number | string;
             replaceWithLocal?: string;
             glCallString?: string;
+            type?: NativeType;
         }
     },
     syntheticParams?: {
@@ -43,15 +44,13 @@ export interface NativeHintsCommand {
 }
 
 export const nativeHintsCommands: { [commandName: string]: NativeHintsCommand } = {
-    // hardcoded length, always should be 1
-    glGetTexParameterfv: setParamLength('params', 1),
-    glGetTexParameteriv: setParamLength('params', 1),
-    glGetShaderiv: setParamLength('params', 1),
-    glGetRenderbufferParameteriv: setParamLength('params', 1),
-    glGetProgramiv: setParamLength('params', 1),
-    glGetBufferParameteriv: setParamLength('params', 1),
-
     // needs additional parameter for determining array-size
+    glGetTexParameterfv: addLengthParam('params'),
+    glGetTexParameteriv: addLengthParam('params'),
+    glGetShaderiv: addLengthParam('params'),
+    glGetRenderbufferParameteriv: addLengthParam('params'),
+    glGetProgramiv: addLengthParam('params'),
+    glGetBufferParameteriv: addLengthParam('params'),
     glGetUniformiv: addLengthParam('params'),
     glGetUniformfv: addLengthParam('params'),
     glGetBooleanv: addLengthParam('data'),
@@ -61,7 +60,6 @@ export const nativeHintsCommands: { [commandName: string]: NativeHintsCommand } 
     glGetFramebufferAttachmentParameteriv: addLengthParam('params'),
 
     // TODO remove hardcoded length params
-    // TODO glDeleteFramebuffers & alike, replace n with buffer_length
     glUniform1fv: replaceParamWithLocal('count', 'byteLength_value'),
     glUniform1iv: replaceParamWithLocal('count', 'byteLength_value'),
     glUniform2fv: replaceParamWithLocal('count', 'byteLength_value'),
@@ -81,4 +79,28 @@ export const nativeHintsCommands: { [commandName: string]: NativeHintsCommand } 
     glBufferSubData: replaceParamWithLocal('size', 'byteLength_data'),
     glCompressedTexImage2D: replaceParamWithLocal('imageSize', 'byteLength_data'),
     glCompressedTexSubImage2D: replaceParamWithLocal('imageSize', 'byteLength_data'),
+
+    glShaderBinary: {
+        params: {
+            count: {
+                replaceWithLocal: 'length_shaders'
+            },
+            length: {
+                replaceWithLocal: 'byteLength_binary'
+            }
+        }
+    },
+
+    glDrawElements: {
+        params: {
+            indices: {
+                type: nativeTypeCollection.get('const GLint *')
+            }
+        }
+    },
+    glVertexAttribPointer: {
+        params: {
+            type: nativeTypeCollection.get('const GLint *')
+        }
+    }
 };
