@@ -3,4 +3,4 @@
 #endif
 
 typedef void* (* GLACEloadproc)(const char *name);
-GLAPI void glaceLoadGl(GLACEloadproc);
+GLAPI bool glaceLoadGl(GLACEloadproc);

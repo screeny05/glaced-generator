@@ -62,6 +62,12 @@ export interface ${glContextName} {
         ${command.docs ? Utils.toBlockComment(command.docs, 4) : '    /* Docs: NOTFOUND */'}
         ${command.getTypescriptSignature()};
     `, '\n\n')}
+
+    /**
+     * load opengl functions given a fn returning fn-pointers.
+     * e.g. glace.glfw.getProcAddress
+     */
+    loadGl(loadproc: (name: string) => number): void;
 }
 
 export const glContext: ${glContextName} = bindings('glace');
@@ -111,10 +117,12 @@ ${mapToString(this.commands, (command: GlCommand) => command.getProcTypedef())}
 ${mapToString(this.commands, (command: GlCommand) => `${command.getGlPfnName()} ${command.name};`)}
 
 // load gl functions
-void glaceLoadGl(GLACEloadproc load){
+bool glaceLoadGl(GLACEloadproc load){
     ${mapToString(this.commands, (command: GlCommand) => `
         ${command.name} = (${command.getGlPfnName()})load("${command.name}");
+        if(${command.name} == 0){ return false; }
     `)}
+    return true;
 }
 
 napi_env _env;
@@ -126,36 +134,40 @@ void* loadprocProxy(const char *name) {
     napi_value resultValue;
     napi_value global;
 
-    NAPI_CALL(_env, napi_get_global(_env, &global));
+    NAPI_CALL_BASE(_env, napi_get_global(_env, &global), 0);
     NAPI_CALL_BASE(_env, napi_create_string_utf8(_env, name, -1, &arg), 0);
 
     napi_value* argv = &arg;
     NAPI_CALL_BASE(_env, napi_call_function(_env, global, _loadproc, 1, argv, &resultValue), 0);
 
+    napi_valuetype resultValuetype;
+    NAPI_CALL_BASE(_env, napi_typeof(_env, resultValue, &resultValuetype), 0);
+    NAPI_ASSERT(_env, resultValuetype == napi_number, "Expected return value to be of type number.");
+
     NAPI_CALL_BASE(_env, napi_get_value_int64(_env, resultValue, &value), 0);
     return (void *)value;
 }
 
-napi_value napi_glaceLoadGl(napi_env env, napi_callback_info info) {
-    GET_NAPI_PARAMS_INFO(1, "glaceLoadGl(loadproc: (name: string) => number): void");
+napi_value napi_loadGl(napi_env env, napi_callback_info info) {
+    GET_NAPI_PARAMS_INFO(1, "loadGl(loadproc: (name: string) => number): void");
     GET_NAPI_PARAM_FUNCTION(loadproc, 0);
 
     _env = env;
     _loadproc = loadproc;
 
-    glaceLoadGl((GLACEloadproc)loadprocProxy);
+    bool result = glaceLoadGl((GLACEloadproc)loadprocProxy);
 
     _env = NULL;
     _loadproc = NULL;
 
-    RETURN_NAPI_UNDEFINED();
+    RETURN_NAPI_BOOL(result);
 }
 
 ${mapToString(this.commands, command => command.getBody())}
 
 void Init(napi_env env, napi_value exports, napi_value module, void* priv){
     napi_property_descriptor properties[] = {
-        DECLARE_NAPI_PROPERTY("glaceLoadGl", napi_glaceLoadGl),
+        DECLARE_NAPI_PROPERTY("loadGl", napi_loadGl),
         ${mapToString(this.commands, (command: GlCommand) => `
             DECLARE_NAPI_PROPERTY("${command.getExportName()}", napi_${command.name}),
         `)}
@@ -171,7 +183,7 @@ NAPI_MODULE(gles, Init);
 #endif`;
 
         const packageJsonSource = JSON.stringify({
-            name: 'node-glace-' + this.api + '-' + this.version,
+            name: '@glaced/' + this.api + '-' + this.version,
             version: glacePackageInfo.version + '-' + this.revision,
             author: glacePackageInfo.author,
             license: glacePackageInfo.license,
@@ -185,6 +197,9 @@ NAPI_MODULE(gles, Init);
             scripts: {
                 build: 'node-gyp build && tsc'
             },
+            engines: {
+                node: '>=8.0.0 <=8.3.0'
+            },
             types: './glace.d.ts',
         }, null, '    ');
 
@@ -196,6 +211,15 @@ NAPI_MODULE(gles, Init);
                 sourceMap: true
             },
             exclude: ['node_modules']
+        }, null, '    ');
+
+        const bindingGypSource = JSON.stringify({
+            targets: [{
+                target_name: 'glace',
+                sources: ['glace.cc',],
+                include_dirs: ['deps/include'],
+                library_dirs: ['/usr/local/lib']
+            }]
         }, null, '    ');
 
         // format c source with clang
@@ -215,6 +239,7 @@ NAPI_MODULE(gles, Init);
         await promisify(writeFile)(joinPath(folder, 'glace.cc'), cSource, 'utf8');
         await promisify(writeFile)(joinPath(folder, 'package.json'), packageJsonSource, 'utf8');
         await promisify(writeFile)(joinPath(folder, 'tsconfig.json'), tsConfigSource, 'utf8');
+        await promisify(writeFile)(joinPath(folder, 'binding.gyp'), bindingGypSource, 'utf8');
         await copy('./template/glace.h', joinPath(folder, 'glace.h'));
         await copy('./template/deps/', joinPath(folder, 'deps'));
     }
