@@ -65,9 +65,9 @@ export interface ${glContextName} {
 
     /**
      * load opengl functions given a fn returning fn-pointers.
-     * e.g. glace.glfw.getProcAddress
+     * e.g. glfw.getProcAddress
      */
-    loadGl(loadproc: (name: string) => number): void;
+    loadContext(loadproc: (name: string) => number): void;
 }
 
 export const glContext: ${glContextName} = bindings('glace');
@@ -75,6 +75,8 @@ export const glContext: ${glContextName} = bindings('glace');
 glContext.bindingsApi = '${this.api}';
 glContext.bindingsVersion = '${this.version}';
 glContext.bindingsRevision = ${this.revision};
+
+glContext['inspect'] = (depth, options) => options.stylize('[object ${glContextName}]', 'special');
 
 ${mapToString(this.enums, enumValue => `
     glContext.${Utils.enumNameToExport(enumValue.name)} = ${enumValue.value};
@@ -148,8 +150,8 @@ void* loadprocProxy(const char *name) {
     return (void *)value;
 }
 
-napi_value napi_loadGl(napi_env env, napi_callback_info info) {
-    GET_NAPI_PARAMS_INFO(1, "loadGl(loadproc: (name: string) => number): void");
+napi_value napi_loadContext(napi_env env, napi_callback_info info) {
+    GET_NAPI_PARAMS_INFO(1, "loadContext(loadproc: (name: string) => number): void");
     GET_NAPI_PARAM_FUNCTION(loadproc, 0);
 
     _env = env;
@@ -167,7 +169,7 @@ ${mapToString(this.commands, command => command.getBody())}
 
 void Init(napi_env env, napi_value exports, napi_value module, void* priv){
     napi_property_descriptor properties[] = {
-        DECLARE_NAPI_PROPERTY("loadGl", napi_loadGl),
+        DECLARE_NAPI_PROPERTY("loadContext", napi_loadContext),
         ${mapToString(this.commands, (command: GlCommand) => `
             DECLARE_NAPI_PROPERTY("${command.getExportName()}", napi_${command.name}),
         `)}
@@ -188,6 +190,7 @@ NAPI_MODULE(gles, Init);
             author: glacePackageInfo.author,
             license: glacePackageInfo.license,
             main: 'dist/glace.js',
+            types: 'index.d.ts',
             dependencies: {
                 bindings: glacePackageInfo.dependencies.bindings
             },
@@ -195,12 +198,11 @@ NAPI_MODULE(gles, Init);
                 typescript: glacePackageInfo.dependencies.typescript
             },
             scripts: {
-                build: 'node-gyp build && tsc'
+                build: 'node-gyp configure && node-gyp build && tsc'
             },
             engines: {
                 node: '>=8.0.0 <=8.3.0'
             },
-            types: './glace.d.ts',
         }, null, '    ');
 
         const tsConfigSource = JSON.stringify({
@@ -241,6 +243,8 @@ NAPI_MODULE(gles, Init);
         await promisify(writeFile)(joinPath(folder, 'tsconfig.json'), tsConfigSource, 'utf8');
         await promisify(writeFile)(joinPath(folder, 'binding.gyp'), bindingGypSource, 'utf8');
         await copy('./template/glace.h', joinPath(folder, 'glace.h'));
+        await copy('./template/index.d.ts', joinPath(folder, 'index.d.ts'));
         await copy('./template/deps/', joinPath(folder, 'deps'));
+        console.log('run `cd target && npm run build`');
     }
 }
