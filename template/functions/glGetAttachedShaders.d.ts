@@ -1,1 +1,1 @@
-glGetAttachedShaders(program: number): Uint32Array;
+getAttachedShaders(program: number): Uint32Array

@@ -1,1 +1,1 @@
-glGetProgramInfoLog(program: number): string;
+getProgramInfoLog(program: number): string

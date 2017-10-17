@@ -1,1 +1,1 @@
-glGetVertexAttribPointerv(index: number, pname: number): number;
+getVertexAttribPointerv(index: number, pname: number): number

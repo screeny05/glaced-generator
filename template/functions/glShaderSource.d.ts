@@ -1,1 +1,1 @@
-glShaderSource(shader: number, code: string): void;
+shaderSource(shader: number, code: string): void

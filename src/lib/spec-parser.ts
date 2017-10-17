@@ -69,7 +69,7 @@ export default class GlSpecParser {
             if(!hasTsDefinition){
                 console.warn('no typescript definition for prewritten function ' + glFnName);
             } else {
-                dts = await promisify(readFile)(joinPath(folder, glFnName + '.d.ts'), 'utf8');
+                dts = (await promisify(readFile)(joinPath(folder, glFnName + '.d.ts'), 'utf8')).trim();
             }
 
             this.prewrittenFunctions.set(glFnName, { cc, dts });
@@ -186,7 +186,7 @@ export default class GlSpecParser {
                     const prewrittenFunction = this.prewrittenFunctions.get(name);
                     if(prewrittenFunction){
                         glCommand.body = prewrittenFunction.cc;
-                        glCommand.docs = prewrittenFunction.dts;
+                        glCommand.overrideTsSignature = prewrittenFunction.dts;
                     }
 
                     this.api.commands.push(glCommand);

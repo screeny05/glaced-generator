@@ -6,7 +6,8 @@
 #define RETURN_NAPI_TYPED_ARRAY_BASE(length, data, type) \
     napi_value bufferValue; \
     napi_value returnValue; \
-    NAPI_CALL(env, napi_create_arraybuffer(env, length, (void**)data, &bufferValue)); \
+    void* p = &data; \
+    NAPI_CALL(env, napi_create_arraybuffer(env, sizeof(data), &p, &bufferValue)); \
     NAPI_CALL(env, napi_create_typedarray(env, type, length, bufferValue, 0, &returnValue)); \
     return returnValue;
 
@@ -31,7 +32,7 @@
     NAPI_CALL(env, napi_set_named_property(env, returnValue, "type", val)); \
     return returnValue;
 
-#define RETURN_NAPI_ARRAY_BASE(array, length, napiCreateCall) \
+#define RETURN_NAPI_ARRAY_BASE(length, array, napiCreateCall) \
     napi_value arrayValue; \
     napi_value singleValue; \
     napi_create_array_with_length(env, length, &arrayValue); \
@@ -41,8 +42,8 @@
     } \
     return arrayValue;
 
-#define RETURN_NAPI_ARRAY_NUMBER(array, length) RETURN_NAPI_ARRAY_BASE(array, length, napi_create_number);
-#define RETURN_NAPI_ARRAY_BOOL(array, length) RETURN_NAPI_ARRAY_BASE(array, length, napi_get_boolean);
+#define RETURN_NAPI_ARRAY_NUMBER(length, array) RETURN_NAPI_ARRAY_BASE(length, array, napi_create_number);
+#define RETURN_NAPI_ARRAY_BOOL(length, array) RETURN_NAPI_ARRAY_BASE(length, array, napi_get_boolean);
 
 #define GET_NAPI_PARAMS_INFO(expectedArgc, signature) \
     napi_valuetype valuetype; \
@@ -83,6 +84,7 @@
     napi_value name = args[i];
 
 #define GET_NAPI_PARAM_ARRAY_BUFFER(name, i) \
+    valuetype = napi_object; \
     size_t byteLength_##name; \
     void* name; \
     bool isTypedArray_##name; \
@@ -99,6 +101,7 @@
     }
 
 #define GET_NAPI_PARAM_TYPED_ARRAY(name, i, cType, napiType, readableType) \
+    valuetype = napi_object; \
     size_t byteLength_##name; \
     void* void_##name; \
     bool isTypedArray_##name; \

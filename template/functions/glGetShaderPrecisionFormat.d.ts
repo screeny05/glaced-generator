@@ -1,1 +1,1 @@
-glGetShaderPrecisionFormat(shadertype: number, precisiontype: number): GLShaderPrecisionFormat;
+getShaderPrecisionFormat(shadertype: number, precisiontype: number): { rangeMin: number, rangeMax: number, precision: number }

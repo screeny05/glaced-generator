@@ -1,1 +1,1 @@
-glGetShaderInfoLog(shader: number): string;
+getShaderInfoLog(shader: number): string

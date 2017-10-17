@@ -1,5 +1,5 @@
 napi_value napi_glGetShaderSource(napi_env env, napi_callback_info info){
-    GET_NAPI_PARAMS_INFO(2, "glGetShaderSource(shader: number): string;");
+    GET_NAPI_PARAMS_INFO(1, "glGetShaderSource(shader: number): string;");
     GET_NAPI_PARAM_GLENUM(shader, 0);
 
     GLint len;

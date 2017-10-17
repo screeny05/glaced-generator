@@ -57,6 +57,7 @@ export class GlCommand extends GlCommandEntry {
     glParams: GlCommandEntry[];
     outParams: GlCommandEntry[];
     hints?: NativeHintsCommand;
+    overrideTsSignature?: string;
 
     constructor(name: string, type: NativeType, params: GlCommandEntry[] = []){
         super(name, type);
@@ -154,7 +155,7 @@ export class GlCommand extends GlCommandEntry {
     }
 
     getTypescriptSignature(){
-        return `
+        return this.overrideTsSignature ? this.overrideTsSignature : `
             ${this.getExportName()}(${this.getParams.map(param => param.name + ': ' + param.type.tsType).join(', ')}): ${this.outParams.length > 0 ? this.outParams[0].type.tsType : this.type.tsType}
         `.trim();
     }

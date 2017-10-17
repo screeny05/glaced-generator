@@ -1,1 +1,1 @@
-getActiveAttrib(program: GLESProgram | null, index: number): GLESActiveInfo | null;
+getActiveAttrib(program: number, index: number): number

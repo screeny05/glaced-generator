@@ -24,12 +24,12 @@ const ReturnMacro: NativeTypeMacroCollection<NativeTypeReturnMacro> = {
 
     ARRAY_BUFFER: guardMissingLength('ARRAY_BUFFER', (val, length) => `RETURN_NAPI_ARRAY_BUFFER(${length}, ${val});`),
 
-    ARRAY_NUMBER: guardMissingLength('ARRAY_BOOLEAN', (val, length) => `RETURN_NAPI_ARRAY_NUMBER(${val}, ${length});`),
-    ARRAY_BOOLEAN: guardMissingLength('ARRAY_BOOLEAN', (val, length) => `RETURN_NAPI_ARRAY_BOOL(${val}, ${length});`),
+    ARRAY_NUMBER: guardMissingLength('ARRAY_BOOLEAN', (val, length) => `RETURN_NAPI_ARRAY_NUMBER(${length}, ${val});`),
+    ARRAY_BOOLEAN: guardMissingLength('ARRAY_BOOLEAN', (val, length) => `RETURN_NAPI_ARRAY_BOOL(${length}, ${val});`),
 
-    TYPED_ARRAY_UINT32: guardMissingLength('TYPED_ARRAY_UINT32', (val, length) => `RETURN_NAPI_TYPED_ARRAY_UINT32(${val}, ${length});`),
-    TYPED_ARRAY_INT32: guardMissingLength('TYPED_ARRAY_INT32', (val, length) => `RETURN_NAPI_TYPED_ARRAY_INT32(${val}, ${length});`),
-    TYPED_ARRAY_FLOAT: guardMissingLength('TYPED_ARRAY_FLOAT', (val, length) => `RETURN_NAPI_TYPED_ARRAY_FLOAT(${val}, ${length});`),
+    TYPED_ARRAY_UINT32: guardMissingLength('TYPED_ARRAY_UINT32', (val, length) => `RETURN_NAPI_TYPED_ARRAY_UINT32(${length}, ${val});`),
+    TYPED_ARRAY_INT32: guardMissingLength('TYPED_ARRAY_INT32', (val, length) => `RETURN_NAPI_TYPED_ARRAY_INT32(${length}, ${val});`),
+    TYPED_ARRAY_FLOAT: guardMissingLength('TYPED_ARRAY_FLOAT', (val, length) => `RETURN_NAPI_TYPED_ARRAY_FLOAT(${length}, ${val});`),
 
     THROW_NOT_IMPLEMENTED: (type: any) => { throw new TypeError(`ReturnMacro not implemented for "${type.name}"`); },
 }

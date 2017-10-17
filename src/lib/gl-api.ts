@@ -50,7 +50,7 @@ export default class GlApi {
 import * as bindings from 'bindings';
 
 export interface ${glContextName} {
-    bindingsApi: string;
+    bindingsApi: '${this.api}';
     bindingsVersion: string;
     bindingsRevision: number;
 

@@ -100,7 +100,9 @@ export const nativeHintsCommands: { [commandName: string]: NativeHintsCommand } 
     },
     glVertexAttribPointer: {
         params: {
-            type: nativeTypeCollection.get('const GLint *')
+            pointer: {
+                type: nativeTypeCollection.get('GLint'),
+            }
         }
     }
 };
