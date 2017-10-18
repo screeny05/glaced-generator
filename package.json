@@ -1,6 +1,6 @@
 {
-  "name": "glace",
-  "version": "1.0.0",
+  "name": "@glaced/generator",
+  "version": "0.1.0",
   "description": "",
   "main": "dist/index.js",
   "scripts": {
