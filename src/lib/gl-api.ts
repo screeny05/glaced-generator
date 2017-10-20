@@ -169,9 +169,9 @@ ${mapToString(this.commands, command => command.getBody())}
 
 void Init(napi_env env, napi_value exports, napi_value module, void* priv){
     napi_property_descriptor properties[] = {
-        DECLARE_NAPI_PROPERTY("loadContext", napi_loadContext),
+        DECLARE_NAPI_PROPERTY_CONFIGURABLE("loadContext", napi_loadContext),
         ${mapToString(this.commands, (command: GlCommand) => `
-            DECLARE_NAPI_PROPERTY("${command.getExportName()}", napi_${command.name}),
+            DECLARE_NAPI_PROPERTY_CONFIGURABLE("${command.getExportName()}", napi_${command.name}),
         `)}
     };
 

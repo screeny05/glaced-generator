@@ -72,7 +72,9 @@ export class NativeType {
     getParamMacro: NativeTypeGetParamMacro = GetParamMacro.THROW_NOT_IMPLEMENTED.bind(null, this);
     tsType: string = 'any';
     outParamType?: string;
+    outParamMalloc?: (length: string | number | undefined) => string;
     isOutType: boolean = false;
+    isPointerType: boolean = false;
 
     constructor(obj?: Partial<NativeType>){
         if(obj) Object.assign(this, obj);
@@ -100,7 +102,7 @@ export class NativeType {
         return numberType;
     }
 
-    static newOutNumber(name: string, outParamType: string, tsType: string, type: NumberType, bits?: number): NativeType {
+    static newOutNumber(name: string, outParamType: string, tsType: string, type: NumberType, byteLength: number, bits?: number): NativeType {
         const numberType = NativeType.newNumber(name, type, bits);
         const returnMacro = ReturnMacro[type + (bits ? bits : '')];
 
@@ -109,7 +111,9 @@ export class NativeType {
         }
 
         numberType.isOutType = true;
+        numberType.isPointerType = true;
         numberType.outParamType = outParamType;
+        numberType.outParamMalloc = (length) => `(${outParamType})calloc(${length}, ${byteLength})`;
         numberType.returnMacro = returnMacro
         numberType.tsType = tsType;
 
@@ -289,6 +293,6 @@ nativeTypeCollection.add(new NativeType({
     isOutType: true
 }));*/
 
-nativeTypeCollection.add(NativeType.newOutNumber('GLfloat *', 'GLfloat', 'Float32Array', 'TYPED_ARRAY_FLOAT'));
-nativeTypeCollection.add(NativeType.newOutNumber('GLint *', 'GLint', 'Int32Array', 'TYPED_ARRAY_INT', 32));
-nativeTypeCollection.add(NativeType.newOutNumber('GLuint *', 'GLuint', 'Uint32Array', 'TYPED_ARRAY_UINT', 32));
+nativeTypeCollection.add(NativeType.newOutNumber('GLfloat *', 'GLfloat *', 'Float32Array', 'TYPED_ARRAY_FLOAT', 4));
+nativeTypeCollection.add(NativeType.newOutNumber('GLint *', 'GLint *', 'Int32Array', 'TYPED_ARRAY_INT', 4, 32));
+nativeTypeCollection.add(NativeType.newOutNumber('GLuint *', 'GLuint *', 'Uint32Array', 'TYPED_ARRAY_UINT', 4, 32));

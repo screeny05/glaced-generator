@@ -1,13 +1,16 @@
+void finalizerFree(napi_env env, void* finalize_data, void* arr){
+    free(arr);
+}
+
 #define RETURN_NAPI_BASE(getValueCall) \
     napi_value returnValue; \
     NAPI_CALL(env, getValueCall); \
     return returnValue;
 
-#define RETURN_NAPI_TYPED_ARRAY_BASE(length, data, type) \
+#define RETURN_NAPI_TYPED_ARRAY_BASE(length, byteLength, data, type) \
     napi_value bufferValue; \
     napi_value returnValue; \
-    void* p = &data; \
-    NAPI_CALL(env, napi_create_arraybuffer(env, sizeof(data), &p, &bufferValue)); \
+    NAPI_CALL(env, napi_create_external_arraybuffer(env, data, byteLength, finalizerFree, data, &bufferValue)); \
     NAPI_CALL(env, napi_create_typedarray(env, type, length, bufferValue, 0, &returnValue)); \
     return returnValue;
 
@@ -16,9 +19,9 @@
 #define RETURN_NAPI_BOOL(val) RETURN_NAPI_BASE(napi_get_boolean(env, val, &returnValue))
 #define RETURN_NAPI_STRING(val) RETURN_NAPI_BASE(napi_create_string_utf8(env, (const char *)val, -1, &returnValue));
 #define RETURN_NAPI_ARRAY_BUFFER(length, data) RETURN_NAPI_BASE(napi_create_arraybuffer(env, length, (void**)data, &returnValue));
-#define RETURN_NAPI_TYPED_ARRAY_FLOAT(length, data) RETURN_NAPI_TYPED_ARRAY_BASE(length, data, napi_float32_array);
-#define RETURN_NAPI_TYPED_ARRAY_UINT32(length, data) RETURN_NAPI_TYPED_ARRAY_BASE(length, data, napi_uint32_array);
-#define RETURN_NAPI_TYPED_ARRAY_INT32(length, data) RETURN_NAPI_TYPED_ARRAY_BASE(length, data, napi_int32_array);
+#define RETURN_NAPI_TYPED_ARRAY_FLOAT(length, data) RETURN_NAPI_TYPED_ARRAY_BASE(length, length * sizeof(float), data, napi_float32_array);
+#define RETURN_NAPI_TYPED_ARRAY_UINT32(length, data) RETURN_NAPI_TYPED_ARRAY_BASE(length, length * sizeof(uint32_t), data, napi_uint32_array);
+#define RETURN_NAPI_TYPED_ARRAY_INT32(length, data) RETURN_NAPI_TYPED_ARRAY_BASE(length, length * sizeof(int32_t), data, napi_int32_array);
 
 #define RETURN_NAPI_GL_ACTIVE_INFO(name, size, type) \
     napi_value val; \
@@ -181,3 +184,5 @@
     NAPI_CALL_RETURN_VOID(_env, napi_get_null(_env, &nullValue)); \
     NAPI_CALL_RETURN_VOID(_env, napi_get_reference_value(_env, callbackRefName, &callbackValue)); \
     NAPI_CALL_RETURN_VOID(_env, napi_call_function(_env, nullValue, callbackValue, argc, args, NULL));
+
+#define DECLARE_NAPI_PROPERTY_CONFIGURABLE(name, func) { (name), 0, (func), 0, 0, 0, napi_configurable, 0 }

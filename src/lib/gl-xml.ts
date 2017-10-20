@@ -36,8 +36,7 @@ export class GlCommandEntry {
     }
 
     getPointerName(){
-        // TODO: i don't know _anything_ about c.
-        return '&' + this.name;
+        return this.type.isPointerType ? this.name : ('&' + this.name);
     }
 
     getExportName(){
@@ -130,8 +129,9 @@ export class GlCommand extends GlCommandEntry {
 
         // declare out params
         if(outParam){
-            cSource += outParam.type.outParamType + ' ' + outParam.name + ';';
-            cSource += '\n\n';
+            cSource += outParam.type.outParamType + ' ' + outParam.name;
+            cSource += outParam.type.outParamMalloc ? (' = ' + outParam.type.outParamMalloc(outParam.length)) : '';
+            cSource += ';\n\n';
         }
 
         // don't directly return command return-value, bc:
