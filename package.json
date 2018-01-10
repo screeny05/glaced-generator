@@ -1,12 +1,8 @@
 {
   "name": "@glaced/generator",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "",
   "main": "dist/index.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "download-specs": "node dist/index.js"
-  },
   "author": "Sebastian Langer <sl@scn.cx>",
   "license": "MIT",
   "dependencies": {

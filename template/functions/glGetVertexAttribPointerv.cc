@@ -5,5 +5,5 @@ napi_value napi_glGetVertexAttribPointerv(napi_env env, napi_callback_info info)
 
     void* ret = NULL;
     glGetVertexAttribPointerv(index, pname, &ret);
-    RETURN_NAPI_NUMBER(static_cast<GLuint>(reinterpret_cast<size_t>(ret)));
+    RETURN_NAPI_UINT32(static_cast<GLuint>(reinterpret_cast<size_t>(ret)));
 }

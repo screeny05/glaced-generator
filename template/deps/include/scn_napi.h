@@ -16,6 +16,10 @@ void finalizerFree(napi_env env, void* finalize_data, void* arr){
 
 #define RETURN_NAPI_UNDEFINED() RETURN_NAPI_BASE(napi_get_undefined(env, &returnValue))
 #define RETURN_NAPI_NUMBER(val) RETURN_NAPI_BASE(napi_create_number(env, val, &returnValue))
+#define RETURN_NAPI_INT32(val) RETURN_NAPI_BASE(napi_create_int32(env, val, &returnValue))
+#define RETURN_NAPI_UINT32(val) RETURN_NAPI_BASE(napi_create_uint32(env, val, &returnValue))
+#define RETURN_NAPI_INT64(val) RETURN_NAPI_BASE(napi_create_int64(env, val, &returnValue))
+#define RETURN_NAPI_DOUBLE(val) RETURN_NAPI_BASE(napi_create_double(env, val, &returnValue))
 #define RETURN_NAPI_BOOL(val) RETURN_NAPI_BASE(napi_get_boolean(env, val, &returnValue))
 #define RETURN_NAPI_STRING(val) RETURN_NAPI_BASE(napi_create_string_utf8(env, (const char *)val, -1, &returnValue));
 #define RETURN_NAPI_ARRAY_BUFFER(length, data) RETURN_NAPI_BASE(napi_create_arraybuffer(env, length, (void**)data, &returnValue));
@@ -29,9 +33,9 @@ void finalizerFree(napi_env env, void* finalize_data, void* arr){
     NAPI_CALL(env, napi_create_object(env, &returnValue)); \
     NAPI_CALL(env, napi_create_string_utf8(env, name, -1, &val)); \
     NAPI_CALL(env, napi_set_named_property(env, returnValue, "name", val)); \
-    NAPI_CALL(env, napi_create_number(env, size, &val)); \
+    NAPI_CALL(env, napi_create_int32(env, size, &val)); \
     NAPI_CALL(env, napi_set_named_property(env, returnValue, "size", val)); \
-    NAPI_CALL(env, napi_create_number(env, type, &val)); \
+    NAPI_CALL(env, napi_create_uint32(env, type, &val)); \
     NAPI_CALL(env, napi_set_named_property(env, returnValue, "type", val)); \
     return returnValue;
 
@@ -104,7 +108,6 @@ void finalizerFree(napi_env env, void* finalize_data, void* arr){
     }
 
 #define GET_NAPI_PARAM_TYPED_ARRAY(name, i, cType, napiType, readableType) \
-    valuetype = napi_object; \
     size_t byteLength_##name; \
     void* void_##name; \
     bool isTypedArray_##name; \

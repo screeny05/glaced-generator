@@ -167,7 +167,7 @@ napi_value napi_loadContext(napi_env env, napi_callback_info info) {
 
 ${mapToString(this.commands, command => command.getBody())}
 
-void Init(napi_env env, napi_value exports, napi_value module, void* priv){
+napi_value Init(napi_env env, napi_value exports){
     napi_property_descriptor properties[] = {
         DECLARE_NAPI_PROPERTY_CONFIGURABLE("loadContext", napi_loadContext),
         ${mapToString(this.commands, (command: GlCommand) => `
@@ -175,7 +175,8 @@ void Init(napi_env env, napi_value exports, napi_value module, void* priv){
         `)}
     };
 
-    NAPI_CALL_RETURN_VOID(env, napi_define_properties(env, exports, ${this.commands.length + 1}, properties));
+    NAPI_CALL(env, napi_define_properties(env, exports, ${this.commands.length + 1}, properties));
+    return exports;
 }
 
 NAPI_MODULE(gles, Init);
@@ -201,7 +202,7 @@ NAPI_MODULE(gles, Init);
                 build: 'node-gyp configure && node-gyp build && tsc'
             },
             engines: {
-                node: '>=8.0.0 <=8.3.0'
+                node: '>=8.6.0'
             },
         }, null, '    ');
 

@@ -19,6 +19,10 @@ const guardMissingLength = (name: string, cb: NativeTypeReturnMacro) => (val, le
 const ReturnMacro: NativeTypeMacroCollection<NativeTypeReturnMacro> = {
     UNDEFINED: () => 'RETURN_NAPI_UNDEFINED();',
     NUMBER: val => `RETURN_NAPI_NUMBER(${val});`,
+    INT32: val => `RETURN_NAPI_INT32(${val});`,
+    UINT32: val => `RETURN_NAPI_UINT32(${val});`,
+    INT64: val => `RETURN_NAPI_INT64(${val});`,
+    DOUBLE: val => `RETURN_NAPI_DOUBLE(${val});`,
     STRING: val => `RETURN_NAPI_STRING(${val});`,
     BOOLEAN: val => `RETURN_NAPI_BOOL(${val});`,
 
@@ -88,15 +92,32 @@ export class NativeType {
         const numberType = new NativeType({
             name,
             tsType: 'number',
-            returnMacro: ReturnMacro.NUMBER,
+            returnMacro: ReturnMacro.UINT32
         });
 
+        // GetParamMacro
         const getParamMacroName = type + (bits ? bits : '');
         const getParamMacro = GetParamMacro[getParamMacroName];
         if(getParamMacro){
             numberType.getParamMacro = getParamMacro;
         } else {
             throw new TypeError('GetParamMacro for number-type ' + getParamMacroName + ' not found.');
+        }
+
+        // ReturnMacro
+        if(bits) {
+            if(bits <= 32 && type === 'UINT'){
+                numberType.returnMacro = ReturnMacro.UINT32;
+            }
+            if(bits <= 32 && type === 'INT'){
+                numberType.returnMacro = ReturnMacro.INT32;
+            }
+            if(bits === 64){
+                numberType.returnMacro = ReturnMacro.INT64;
+            }
+            if(type === 'FLOAT' || type === 'DOUBLE'){
+                numberType.returnMacro = ReturnMacro.DOUBLE;
+            }
         }
 
         return numberType;
@@ -200,6 +221,8 @@ nativeTypeCollection.add(NativeType.newNumber('GLuint', UINT, 32));
 nativeTypeCollection.add(NativeType.newNumber('GLint', INT, 32));
 nativeTypeCollection.add(NativeType.newNumber('GLuint64', UINT, 64));
 nativeTypeCollection.add(NativeType.newNumber('GLint64', INT, 64));
+nativeTypeCollection.add(NativeType.newNumber('GLfloat', 'FLOAT'));
+nativeTypeCollection.add(NativeType.newNumber('GLdouble', 'DOUBLE'));
 
 nativeTypeCollection.add(NativeType.newNumber('GLfixed', INT, 32));
 nativeTypeCollection.add(NativeType.newNumber('GLsizei', INT, 32));
@@ -208,8 +231,6 @@ nativeTypeCollection.add(NativeType.newNumber('GLintptr', INT, 64));
 nativeTypeCollection.add(NativeType.newNumber('GLsizeiptr', INT, 64));
 nativeTypeCollection.add(NativeType.newNumber('GLbitfield', INT, 32));
 nativeTypeCollection.add(NativeType.newNumber('GLhalf', INT, 16));
-nativeTypeCollection.add(NativeType.newNumber('GLfloat', 'FLOAT'));
-nativeTypeCollection.add(NativeType.newNumber('GLdouble', 'DOUBLE'));
 nativeTypeCollection.add(NativeType.newNumber('GLclampf', 'FLOAT'));
 nativeTypeCollection.add(NativeType.newNumber('GLclampd', 'DOUBLE'));
 
