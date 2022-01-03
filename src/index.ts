@@ -27,6 +27,7 @@ program
 
 program
     .command('generate')
+    .description('Generate natvie bindings for the given API')
     .option('-a --api <gles1|gles2|glsc2|gl|egl|glx|wgl>', 'API to generate bindings for.', /^(gles1|gles2|glsc2|gl|egl|glx|wgl)$/, 'gles2')
     .option('-v --version <version>', 'Minimum required version.', '2.0')
     .option('-s --source <folder>', 'Folder containing the XML files.', './data')
@@ -34,5 +35,10 @@ program
     .description('Generates bindings')
     .action(options => GlSpecParser.generateBindings(options));
 
+program
+    .command('ls')
+    .description('List all possible bindings and versions')
+    .option('-s --source <folder>', 'Folder containing the XML files.', './data')
+    .action(async (options) => console.log((await GlSpecParser.getPossibleApis(options)).join('\n')));
 
 program.parse(process.argv);

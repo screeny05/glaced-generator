@@ -6,11 +6,15 @@ import * as Utils from './napi-utils';
 import { GlCommandEntry, GlEnum, GlCommand } from './gl-xml';
 import GlApi from './gl-api';
 
-export interface GlSpecParserOptions {
+export interface GlSpecParserGenerateOptions {
     api: string;
     version: string;
     source: string;
     target: string;
+}
+
+export interface GlSpecParserListOptions {
+    source: string;
 }
 
 export default class GlSpecParser {
@@ -27,7 +31,7 @@ export default class GlSpecParser {
         this.api.version = version;
     }
 
-    async parseXmlFolder(foldername: string, map: Map<string, any>, throws: boolean = false){
+    static async parseXmlFolder(foldername: string, map: Map<string, any>, throws: boolean = false){
         const files = await promisify(readdir)(foldername);
         await Promise.all(files.map(async file => {
             if(getExtension(file) !== '.xml'){
@@ -45,12 +49,12 @@ export default class GlSpecParser {
     }
 
     async parseSpecFolder(foldername: string){
-        await this.parseXmlFolder(foldername, this.specifications);
+        await GlSpecParser.parseXmlFolder(foldername, this.specifications);
         this.api.revision = await promisify(readFile)(joinPath(foldername, 'revision'), 'utf8');
     }
 
     async parseDocFolder(foldername: string){
-        await this.parseXmlFolder(foldername, this.documentations, false);
+        await GlSpecParser.parseXmlFolder(foldername, this.documentations, false);
     }
 
     async loadPrewrittenFunctions(folder: string){
@@ -258,7 +262,7 @@ ${orgDef}
         });
     }
 
-    static async generateBindings(options: GlSpecParserOptions): Promise<void> {
+    static async generateBindings(options: GlSpecParserGenerateOptions): Promise<void> {
         const parser = new GlSpecParser(options.api, options.version);
 
         await parser.parseSpecFolder(joinPath(options.source, 'spec'));
@@ -268,5 +272,18 @@ ${orgDef}
         parser.buildApi();
 
         await parser.api.generateFiles(options.target);
+    }
+
+    static async getPossibleApis(options: GlSpecParserListOptions): Promise<string[]> {
+        const specs = new Map<string, any>();
+        const apis: string[] = [];
+        await GlSpecParser.parseXmlFolder(joinPath(options.source, 'spec'), specs);
+
+        specs.forEach(spec => {
+            spec.registry.feature.forEach(feature => {
+                apis.push(feature.$.api + ' ' + feature.$.number);
+            });
+        });
+        return apis;
     }
 }

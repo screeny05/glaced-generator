@@ -77,7 +77,7 @@ export function glDocToFunctionDoc(sect): string {
             'constant',
             'refentrytitle'
         ].indexOf(parent['#name']) ? '*' + entry._ + '*' : entry._;
-    }, true);
+    }, true).replace(/\*\//g, '* /').replace(/\/\*/, '/ *');
 }
 
 export function findXmlSectionById(sects, id: string): any {

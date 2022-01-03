@@ -31,9 +31,15 @@ const ReturnMacro: NativeTypeMacroCollection<NativeTypeReturnMacro> = {
     ARRAY_NUMBER: guardMissingLength('ARRAY_BOOLEAN', (val, length) => `RETURN_NAPI_ARRAY_NUMBER(${length}, ${val});`),
     ARRAY_BOOLEAN: guardMissingLength('ARRAY_BOOLEAN', (val, length) => `RETURN_NAPI_ARRAY_BOOL(${length}, ${val});`),
 
+    TYPED_ARRAY_UINT8: guardMissingLength('TYPED_ARRAY_UINT8', (val, length) => `RETURN_NAPI_TYPED_ARRAY_UINT8(${length}, ${val});`),
+    TYPED_ARRAY_INT8: guardMissingLength('TYPED_ARRAY_INT8', (val, length) => `RETURN_NAPI_TYPED_ARRAY_INT8(${length}, ${val});`),
+    TYPED_ARRAY_INT16: guardMissingLength('TYPED_ARRAY_INT16', (val, length) => `RETURN_NAPI_TYPED_ARRAY_INT16(${length}, ${val});`),
+    TYPED_ARRAY_UINT16: guardMissingLength('TYPED_ARRAY_UINT16', (val, length) => `RETURN_NAPI_TYPED_ARRAY_UINT16(${length}, ${val});`),
     TYPED_ARRAY_UINT32: guardMissingLength('TYPED_ARRAY_UINT32', (val, length) => `RETURN_NAPI_TYPED_ARRAY_UINT32(${length}, ${val});`),
     TYPED_ARRAY_INT32: guardMissingLength('TYPED_ARRAY_INT32', (val, length) => `RETURN_NAPI_TYPED_ARRAY_INT32(${length}, ${val});`),
+    TYPED_ARRAY_INT64: guardMissingLength('TYPED_ARRAY_INT64', (val, length) => `RETURN_NAPI_TYPED_ARRAY_INT64(${length}, ${val});`),
     TYPED_ARRAY_FLOAT: guardMissingLength('TYPED_ARRAY_FLOAT', (val, length) => `RETURN_NAPI_TYPED_ARRAY_FLOAT(${length}, ${val});`),
+    TYPED_ARRAY_DOUBLE: guardMissingLength('TYPED_ARRAY_DOUBLE', (val, length) => `RETURN_NAPI_TYPED_ARRAY_DOUBLE(${length}, ${val});`),
 
     THROW_NOT_IMPLEMENTED: (type: any) => { throw new TypeError(`ReturnMacro not implemented for "${type.name}"`); },
 }
@@ -59,8 +65,13 @@ const GetParamMacro: NativeTypeMacroCollection<NativeTypeGetParamMacro> = {
 
     TYPED_ARRAY_FLOAT: (e, i) =>  `GET_NAPI_PARAM_TYPED_ARRAY_FLOAT32(${e.name}, ${i});`,
     TYPED_ARRAY_DOUBLE: (e, i) => `GET_NAPI_PARAM_TYPED_ARRAY_FLOAT64(${e.name}, ${i});`,
+    TYPED_ARRAY_UINT8: (e, i) => `GET_NAPI_PARAM_TYPED_ARRAY_UINT8(${e.name}, ${i});`,
+    TYPED_ARRAY_INT8: (e, i) => `GET_NAPI_PARAM_TYPED_ARRAY_INT8(${e.name}, ${i});`,
+    TYPED_ARRAY_INT16: (e, i) => `GET_NAPI_PARAM_TYPED_ARRAY_INT16(${e.name}, ${i});`,
+    TYPED_ARRAY_UINT16: (e, i) => `GET_NAPI_PARAM_TYPED_ARRAY_UINT16(${e.name}, ${i});`,
     TYPED_ARRAY_INT32: (e, i) => `GET_NAPI_PARAM_TYPED_ARRAY_INT32(${e.name}, ${i});`,
     TYPED_ARRAY_UINT32: (e, i) => `GET_NAPI_PARAM_TYPED_ARRAY_UINT32(${e.name}, ${i});`,
+    TYPED_ARRAY_INT64: (e, i) => `GET_NAPI_PARAM_TYPED_ARRAY_INT64(${e.name}, ${i});`,
 
     ARRAY_UINT32: (e, i) => `GET_NAPI_PARAM_ARRAY_UINT32(${e.name}, ${i});`,
     ARRAY_INT32: (e, i) => `GET_NAPI_PARAM_ARRAY_INT16(${e.name}, ${i});`,
@@ -249,6 +260,22 @@ nativeTypeCollection.add(new NativeType({
     getParamMacro: GetParamMacro.ARRAY_BUFFER,
 }));
 
+nativeTypeCollection.add(new NativeType({
+    name: 'GLsync',
+    tsType: 'any',
+    returnMacro: (val) => `NAPI_RETURN_GL_SYNC(val);`,
+    getParamMacro: (e, i) => `NAPI_GET_GL_SYNC(${e.name}, i);`
+}));
+
+
+// CHECK
+nativeTypeCollection.add(new NativeType({
+    name: 'void **',
+    tsType: 'ArrayBuffer | ArrayBufferView',
+    returnMacro: ReturnMacro.ARRAY_BUFFER,
+    getParamMacro: GetParamMacro.ARRAY_BUFFER,
+}));
+
 // typed arrays
 nativeTypeCollection.add(new NativeType({
     name: 'const GLfloat *',
@@ -272,6 +299,37 @@ nativeTypeCollection.add(new NativeType({
     name: 'const GLuint *',
     tsType: 'Uint32Array',
     getParamMacro: GetParamMacro.TYPED_ARRAY_UINT32
+}));
+
+nativeTypeCollection.add(new NativeType({
+    name: 'const GLenum *',
+    tsType: 'Uint32Array',
+    getParamMacro: GetParamMacro.TYPED_ARRAY_UINT32
+}));
+
+nativeTypeCollection.add(new NativeType({
+    name: 'const GLbyte *',
+    tsType: 'Int8Array',
+    getParamMacro: GetParamMacro.TYPED_ARRAY_INT8
+}));
+
+nativeTypeCollection.add(new NativeType({
+    name: 'const GLshort *',
+    tsType: 'Int16Array',
+    getParamMacro: GetParamMacro.TYPED_ARRAY_INT16
+}));
+
+nativeTypeCollection.add(new NativeType({
+    name: 'const GLushort *',
+    tsType: 'Uint16Array',
+    getParamMacro: GetParamMacro.TYPED_ARRAY_UINT16
+}));
+
+// CHECK
+nativeTypeCollection.add(new NativeType({
+    name: 'const GLboolean *',
+    tsType: 'Uint8Array',
+    getParamMacro: GetParamMacro.TYPED_ARRAY_UINT8
 }));
 
 // general arrays
@@ -315,5 +373,14 @@ nativeTypeCollection.add(new NativeType({
 }));*/
 
 nativeTypeCollection.add(NativeType.newOutNumber('GLfloat *', 'GLfloat *', 'Float32Array', 'TYPED_ARRAY_FLOAT', 4));
+nativeTypeCollection.add(NativeType.newOutNumber('GLdouble *', 'GLdouble *', 'Float64Array', 'TYPED_ARRAY_DOUBLE', 4));
+nativeTypeCollection.add(NativeType.newOutNumber('GLubyte *', 'GLubyte *', 'Uint8Array', 'TYPED_ARRAY_UINT', 4, 8));
+nativeTypeCollection.add(NativeType.newOutNumber('GLushort *', 'GLushort *', 'Uint16Array', 'TYPED_ARRAY_UINT', 4, 16));
 nativeTypeCollection.add(NativeType.newOutNumber('GLint *', 'GLint *', 'Int32Array', 'TYPED_ARRAY_INT', 4, 32));
 nativeTypeCollection.add(NativeType.newOutNumber('GLuint *', 'GLuint *', 'Uint32Array', 'TYPED_ARRAY_UINT', 4, 32));
+nativeTypeCollection.add(NativeType.newOutNumber('GLint64 *', 'GLint64 *', 'Int64Array', 'TYPED_ARRAY_INT', 4, 64));
+nativeTypeCollection.add(NativeType.newOutNumber('GLsizei *', 'GLsizei *', 'Int32Array', 'TYPED_ARRAY_INT', 4, 32));
+nativeTypeCollection.add(NativeType.newOutNumber('GLenum *', 'GLenum *', 'Uint32Array', 'TYPED_ARRAY_UINT', 4, 32));
+
+// CHECK
+nativeTypeCollection.add(NativeType.newOutNumber('GLchar *', 'GLchar *', 'Int32Array', 'TYPED_ARRAY_INT', 4, 32));

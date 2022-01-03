@@ -24,8 +24,13 @@ void finalizerFree(napi_env env, void* finalize_data, void* arr){
 #define RETURN_NAPI_STRING(val) RETURN_NAPI_BASE(napi_create_string_utf8(env, (const char *)val, -1, &returnValue));
 #define RETURN_NAPI_ARRAY_BUFFER(length, data) RETURN_NAPI_BASE(napi_create_arraybuffer(env, length, (void**)data, &returnValue));
 #define RETURN_NAPI_TYPED_ARRAY_FLOAT(length, data) RETURN_NAPI_TYPED_ARRAY_BASE(length, length * sizeof(float), data, napi_float32_array);
+#define RETURN_NAPI_TYPED_ARRAY_DOUBLE(length, data) RETURN_NAPI_TYPED_ARRAY_BASE(length, length * sizeof(double), data, napi_float64_array);
 #define RETURN_NAPI_TYPED_ARRAY_UINT32(length, data) RETURN_NAPI_TYPED_ARRAY_BASE(length, length * sizeof(uint32_t), data, napi_uint32_array);
+#define RETURN_NAPI_TYPED_ARRAY_INT8(length, data) RETURN_NAPI_TYPED_ARRAY_BASE(length, length * sizeof(int8_t), data, napi_int8_array);
+#define RETURN_NAPI_TYPED_ARRAY_UINT8(length, data) RETURN_NAPI_TYPED_ARRAY_BASE(length, length * sizeof(uint8_t), data, napi_uint8_array);
+#define RETURN_NAPI_TYPED_ARRAY_INT16(length, data) RETURN_NAPI_TYPED_ARRAY_BASE(length, length * sizeof(int16_t), data, napi_int16_array);
 #define RETURN_NAPI_TYPED_ARRAY_INT32(length, data) RETURN_NAPI_TYPED_ARRAY_BASE(length, length * sizeof(int32_t), data, napi_int32_array);
+#define RETURN_NAPI_TYPED_ARRAY_INT64(length, data) RETURN_NAPI_TYPED_ARRAY_BASE(length, length * sizeof(int64_t), data, napi_int64_array);
 
 #define RETURN_NAPI_GL_ACTIVE_INFO(name, size, type) \
     napi_value val; \
@@ -123,8 +128,13 @@ void finalizerFree(napi_env env, void* finalize_data, void* arr){
 
 #define GET_NAPI_PARAM_TYPED_ARRAY_FLOAT32(name, i) GET_NAPI_PARAM_TYPED_ARRAY(name, i, float*, napi_float32_array, "Float32Array");
 #define GET_NAPI_PARAM_TYPED_ARRAY_FLOAT64(name, i) GET_NAPI_PARAM_TYPED_ARRAY(name, i, double*, napi_float64_array, "Float64Array");
+#define GET_NAPI_PARAM_TYPED_ARRAY_INT8(name, i) GET_NAPI_PARAM_TYPED_ARRAY(name, i, int8_t*, napi_int8_array, "Int8Array");
+#define GET_NAPI_PARAM_TYPED_ARRAY_UINT8(name, i) GET_NAPI_PARAM_TYPED_ARRAY(name, i, uint8_t*, napi_uint8_array, "Uint8Array");
+#define GET_NAPI_PARAM_TYPED_ARRAY_INT16(name, i) GET_NAPI_PARAM_TYPED_ARRAY(name, i, int16_t*, napi_int16_array, "Int16Array");
+#define GET_NAPI_PARAM_TYPED_ARRAY_UINT16(name, i) GET_NAPI_PARAM_TYPED_ARRAY(name, i, uint16_t*, napi_uint16_array, "Uint16Array");
 #define GET_NAPI_PARAM_TYPED_ARRAY_INT32(name, i) GET_NAPI_PARAM_TYPED_ARRAY(name, i, int32_t*, napi_int32_array, "Int32Array");
 #define GET_NAPI_PARAM_TYPED_ARRAY_UINT32(name, i) GET_NAPI_PARAM_TYPED_ARRAY(name, i, uint32_t*, napi_uint32_array, "Uint32Array");
+#define GET_NAPI_PARAM_TYPED_ARRAY_INT64(name, i) GET_NAPI_PARAM_TYPED_ARRAY(name, i, int64_t*, napi_int64_array, "Int64Array");
 
 #define GET_NAPI_PARAM_ARRAY_BASE(name, i, cType, orgType, napiGetCall, readableType) \
     bool isArray_##name; \
